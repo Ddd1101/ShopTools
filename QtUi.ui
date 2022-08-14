@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1456</width>
+    <width>1736</width>
     <height>1263</height>
    </rect>
   </property>
@@ -250,8 +250,8 @@
   <widget class="QPushButton" name="commit">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>1190</y>
+     <x>640</x>
+     <y>650</y>
      <width>151</width>
      <height>71</height>
     </rect>
