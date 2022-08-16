@@ -158,7 +158,7 @@ def CalculateSignature(urlPath,data, shopName):
     # 构造签名因子：拼装参数
     params = list()
     for key in data.keys():
-        params.append(key+data[key])
+        params.append(key+str(data[key]))
     params.sort()
     sortedParams = params
     assembedParams = str()
@@ -183,6 +183,17 @@ def GetTradeData(data, shopName):
     _aop_signature = CalculateSignature(request_type + "alibaba.trade.getSellerOrderList/" + AppKey[shopName], data, shopName)
     data['_aop_signature'] = _aop_signature
     url = base_url + request_type + "alibaba.trade.getSellerOrderList/" + AppKey[shopName]
+    response = requests.post(url, data=data)
+
+    return response.json()
+
+
+def GetSingleTradeData(data, shopName):
+    data['access_token'] = access_token[shopName]
+    _aop_signature = CalculateSignature(request_type + "alibaba.trade.get.sellerView/" + AppKey[shopName], data, shopName)
+    data['_aop_signature'] = _aop_signature
+    print(data)
+    url = base_url + request_type + "alibaba.trade.get.sellerView/" + AppKey[shopName]
     response = requests.post(url, data=data)
 
     return response.json()
@@ -217,6 +228,7 @@ class Window:
         self.ui.Tag.addItem("蓝")
         self.ui.Tag.addItem("绿")
         self.ui.Tag.addItem("黄")
+        self.ui.Tag.addItem("按单号")
 
         self.ui.commit.clicked.connect(self.CheckAllParams)
 
@@ -262,10 +274,14 @@ class Window:
 
 
     def OrderList(self, shopId, shopName, mode, createStartTime, createEndTime):
-        if mode == 0:
+        if mode == 5:
+            orderId = int(self.ui.orderId.toPlainText())
+            self.GetSingleOrder(shopName, orderId)
+        elif mode == 0:
             self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend', shopName=shopName)
         else:
             self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend,waitbuyerreceive', shopName, mode)
+
 
         self.LogOut("# 统计完成 \n")
         self.LogOut("###############################################################")
@@ -274,6 +290,8 @@ class Window:
         orderList = []
 
         orderstatusList = orderstatusStr.split(',')
+
+
 
         for orderstatus in orderstatusList:
             data = {'createStartTime': createStartTime, 'createEndTime': createEndTime, 'orderStatus': orderstatus,
@@ -286,7 +304,7 @@ class Window:
             self.LogOut('# ' + orderstatusStr + ' : ' + str(response['totalRecord']) + '条记录')
             pageNum = CalPageNum(response['totalRecord'])
 
-            BeihuoJson = {}
+
 
             # 规格化数据
             for pageId in range(pageNum):
@@ -305,7 +323,19 @@ class Window:
                                 order['baseInfo']['sellerRemarkIcon'] = '4'
 
                 orderList += response['result']
+        self.GetBeihuoJson(self, orderList, mode)
 
+    def GetSingleOrder(self, shopName, orderId):
+        orderList = []
+        data = {}
+        data['orderId'] = orderId
+        tmp = GetSingleTradeData(data, shopName)
+        orderList.append(tmp['result'])
+        self.GetBeihuoJson(orderList, 0)
+
+
+    def GetBeihuoJson(self, orderList, mode=0):
+        BeihuoJson = {}
         for order in orderList:
             if ('sellerRemarkIcon' in order['baseInfo']) and (order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
                 continue
@@ -348,7 +378,9 @@ class Window:
 
                     # 总价
                     BeihuoJson[cargoNumber][color]['products'][height]['cost'] = BeihuoJson[cargoNumber][color]['products'][height]['price']*BeihuoJson[cargoNumber][color]['products'][height]['quantity']
+        self.GetTable(BeihuoJson)
 
+    def GetTable(self, BeihuoJson):
         # 制表
         productsCountByShopName = {}
         BeihuoList = []
@@ -387,8 +419,6 @@ class Window:
 
         # 排序 拿货地规整
         BeihuoTable.sort(key=lambda x:[x[1],x[2]])
-
-        #
 
         # 写表
         BH_wb = xlsxwriter.Workbook('BHtmp.xlsx')
@@ -450,7 +480,7 @@ class Window:
         flag = True
         while flag:
             try:
-                self.LogOut(url)
+                self.LogOut("<a href='" + url + "'>" + url + "</a>")
                 picData = urllib.request.urlopen(url).read()
                 flag = False
                 time.sleep(3)
