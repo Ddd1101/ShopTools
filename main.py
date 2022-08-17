@@ -1,7 +1,8 @@
 from PySide2 import QtCore
 from PySide2.QtWidgets import QApplication, QMainWindow, QPushButton, QPlainTextEdit, QMessageBox, QFileDialog
 from PySide2.QtUiTools import QUiLoader
-from PySide2.QtCore import QFile, QDate,   QDateTime , QTime
+from PySide2.QtCore import QFile, QDate,   QDateTime , QTime, QUrl
+from PySide2.QtGui import QDesktopServices
 
 import os
 from datetime import datetime, timedelta
@@ -217,9 +218,6 @@ class Window:
         self.ui.priceTablePath.setText("price.xlsx")
         self.ui.priceTablePathButton.clicked.connect(self.CheckPriceTablePath)
 
-        self.ui.saveFilePath.setText("BHtmp.xlsx")
-        self.ui.saveFilePathButton.clicked.connect(self.CheckSaveFilePath)
-
         self.ui.shopName.addItem("联球制衣厂")
         self.ui.shopName.addItem("朝雄制衣厂")
 
@@ -231,6 +229,17 @@ class Window:
         self.ui.Tag.addItem("按单号")
 
         self.ui.commit.clicked.connect(self.CheckAllParams)
+        # self.ui.openUrl.clicked.connect(self.click_window2)
+
+        self.errorUrl = ""
+
+        self.calStartTime = datetime.now()
+
+        self.ui.saveFilePath.setText("BHtmp")
+        self.ui.saveFilePathButton.clicked.connect(self.CheckSaveFilePath)
+
+    def click_window2(self):
+        QDesktopServices.openUrl(QUrl(self.errorUrl))
 
 
     def CheckPriceTablePath(self):
@@ -243,6 +252,7 @@ class Window:
         self.ui.saveFilePath.setText(FileDirectory)
 
     def CheckAllParams(self):
+        self.LogOut("# 启动计算时间 : " + self.calStartTime.strftime('%Y-%m-%d %H:%M:%S'))
         shopId = self.ui.shopName.currentIndex() + 1
         shopName = self.ui.shopName.currentText()
         mode = self.ui.Tag.currentIndex()
@@ -259,10 +269,10 @@ class Window:
 
         createEndTime = datetime(int(endYear), int(endMonth), int(endDay)).strftime('%Y%m%d') + '000000000+0800'
 
-        self.LogOut("店铺名 ：" + shopName)
-        self.LogOut("色标 ：" + self.ui.Tag.currentText())
-        self.LogOut("订单开始时间 ：" + self.ui.startTime.date().toString("yyyy-MM-dd"))
-        self.LogOut("订单截止时间 ：" + self.ui.endTime.date().toString("yyyy-MM-dd"))
+        self.LogOut("# 店铺名 ：" + shopName)
+        self.LogOut("# 色标 ：" + self.ui.Tag.currentText())
+        self.LogOut("# 订单开始时间 ：" + self.ui.startTime.date().toString("yyyy-MM-dd"))
+        self.LogOut("# 订单截止时间 ：" + self.ui.endTime.date().toString("yyyy-MM-dd"))
 
         try:
             _thread.start_new_thread(self.OrderList, (shopId, shopName, int(mode), createStartTime, createEndTime,))
@@ -323,7 +333,7 @@ class Window:
                                 order['baseInfo']['sellerRemarkIcon'] = '4'
 
                 orderList += response['result']
-        self.GetBeihuoJson(self, orderList, mode)
+        self.GetBeihuoJson(orderList, mode)
 
     def GetSingleOrder(self, shopName, orderId):
         orderList = []
@@ -421,7 +431,8 @@ class Window:
         BeihuoTable.sort(key=lambda x:[x[1],x[2]])
 
         # 写表
-        BH_wb = xlsxwriter.Workbook('BHtmp.xlsx')
+        savePath = self.ui.saveFilePath.toPlainText().split('.')[0]
+        BH_wb = xlsxwriter.Workbook(savePath + self.calStartTime.strftime("%m_%d_%H_%M_%S") + ".xlsx")
         BH_sheet = BH_wb.add_worksheet('BH')
         BH_x = 0
         BH_y = 0
@@ -486,6 +497,9 @@ class Window:
                 time.sleep(3)
             except:
                 self.LogOut("# 获取图片异常 重试")
+                if self.errorUrl != url:
+                    self.errorUrl = url
+                    QDesktopServices.openUrl(QUrl(self.errorUrl))
                 time.sleep(3)
 
         return picData
