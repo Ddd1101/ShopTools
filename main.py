@@ -1,5 +1,5 @@
 from PySide2 import QtCore
-from PySide2.QtWidgets import QApplication, QMainWindow, QPushButton, QPlainTextEdit, QMessageBox, QFileDialog
+from PySide2.QtWidgets import QApplication, QMainWindow, QPushButton, QPlainTextEdit, QMessageBox, QFileDialog, QRadioButton
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtCore import QFile, QDate,   QDateTime , QTime, QUrl
 from PySide2.QtGui import QDesktopServices
@@ -27,9 +27,9 @@ dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, 'plugins', 'platforms')
 os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
 
-AppKey = {'联球制衣厂':'2460951','朝雄制衣厂':'4048570', '朝逸饰品厂':'7464845'}
-AppSecret =  {"联球制衣厂":b'AnBm2v0I80x0',"朝雄制衣厂":b'vxMiqUGDZ7p',"朝逸饰品厂":b'Oo0hRGjaaPb'}
-access_token = {'联球制衣厂':'b7635cd6-18b8-4b96-b6a5-d2ab04f203ae','朝雄制衣厂':'f7a85f0e-fb90-40b1-9bc6-b66ad3cf120b', '朝逸饰品厂':'37454060-a51a-497d-9866-0d722a1bd5cc'}
+AppKey = {'联球制衣厂':'9468443','朝雄制衣厂':'4048570', '朝逸饰品厂':'7464845'}
+AppSecret =  {"联球制衣厂":b'SuL1xQz2I88',"朝雄制衣厂":b'vxMiqUGDZ7p',"朝逸饰品厂":b'Oo0hRGjaaPb'}
+access_token = {'联球制衣厂':'4c6a563e-a96c-41f5-a691-6d7a6f92023b','朝雄制衣厂':'f7a85f0e-fb90-40b1-9bc6-b66ad3cf120b', '朝逸饰品厂':'37454060-a51a-497d-9866-0d722a1bd5cc'}
 
 en_code = ['s','S','m','M', 'l','L','x','X']
 
@@ -228,6 +228,11 @@ class Window:
         self.ui.Tag.addItem("黄")
         self.ui.Tag.addItem("按单号")
 
+        self.ui.orderStatus.addItem("待发货 + 已发货")
+        self.ui.orderStatus.addItem("待发货")
+        self.ui.orderStatus.addItem("已发货")
+        self.ui.orderStatus.addItem("待付款")
+
         self.ui.commit.clicked.connect(self.CheckAllParams)
         # self.ui.openUrl.clicked.connect(self.click_window2)
 
@@ -257,6 +262,8 @@ class Window:
         shopName = self.ui.shopName.currentText()
         mode = self.ui.Tag.currentIndex()
 
+        orderStatus = self.ui.orderStatus.currentIndex()
+
         startYear = self.ui.startTime.date().toString("yyyy")
         startMonth = self.ui.startTime.date().toString("MM")
         startDay = self.ui.startTime.date().toString("dd")
@@ -269,13 +276,15 @@ class Window:
 
         createEndTime = datetime(int(endYear), int(endMonth), int(endDay)).strftime('%Y%m%d') + '000000000+0800'
 
+        isPrintOwn = self.ui.IsPrintOwn.isChecked()
+
         self.LogOut("# 店铺名 ：" + shopName)
         self.LogOut("# 色标 ：" + self.ui.Tag.currentText())
         self.LogOut("# 订单开始时间 ：" + self.ui.startTime.date().toString("yyyy-MM-dd"))
         self.LogOut("# 订单截止时间 ：" + self.ui.endTime.date().toString("yyyy-MM-dd"))
 
         try:
-            _thread.start_new_thread(self.OrderList, (shopId, shopName, int(mode), createStartTime, createEndTime,))
+            _thread.start_new_thread(self.OrderList, (shopId, shopName, int(mode), createStartTime, createEndTime, orderStatus, isPrintOwn))
         except:
             print("Error: 无法启动线程")
 
@@ -283,20 +292,26 @@ class Window:
         self.ui.output.append(text)
 
 
-    def OrderList(self, shopId, shopName, mode, createStartTime, createEndTime):
+    def OrderList(self, shopId, shopName, mode, createStartTime, createEndTime, orderStatus, isPrintOwn):
         if mode == 5:
             orderId = int(self.ui.orderId.toPlainText())
-            self.GetSingleOrder(shopName, orderId)
-        elif mode == 0:
-            self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend', shopName=shopName)
-        else:
-            self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend,waitbuyerreceive', shopName, mode)
+            self.GetSingleOrder(shopName, orderId, isPrintOwn)
+        elif orderStatus == 0:
+            self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend,waitbuyerreceive', shopName, isPrintOwn, mode)
+        elif orderStatus == 1:
+            self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend', shopName, isPrintOwn, mode)
+        elif orderStatus == 2:
+            self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerreceive', shopName, isPrintOwn, mode)
+        elif orderStatus == 3:
+            self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerpay', shopName, isPrintOwn, mode)
+
+
 
 
         self.LogOut("# 统计完成 \n")
         self.LogOut("###############################################################")
 
-    def GetOrderBill(self, createStartTime, createEndTime, orderstatusStr, shopName, mode = 0):
+    def GetOrderBill(self, createStartTime, createEndTime, orderstatusStr, shopName, isPrintOwn, mode = 0):
         orderList = []
 
         orderstatusList = orderstatusStr.split(',')
@@ -333,18 +348,18 @@ class Window:
                                 order['baseInfo']['sellerRemarkIcon'] = '4'
 
                 orderList += response['result']
-        self.GetBeihuoJson(orderList, mode)
+        self.GetBeihuoJson(orderList, isPrintOwn, mode)
 
-    def GetSingleOrder(self, shopName, orderId):
+    def GetSingleOrder(self, shopName, orderId, isPrintOwn):
         orderList = []
         data = {}
         data['orderId'] = orderId
         tmp = GetSingleTradeData(data, shopName)
         orderList.append(tmp['result'])
-        self.GetBeihuoJson(orderList, 0)
+        self.GetBeihuoJson(orderList, isPrintOwn, 0)
 
 
-    def GetBeihuoJson(self, orderList, mode=0):
+    def GetBeihuoJson(self, orderList, isPrintOwn, mode=0):
         BeihuoJson = {}
         for order in orderList:
             if ('sellerRemarkIcon' in order['baseInfo']) and (order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
@@ -388,9 +403,9 @@ class Window:
 
                     # 总价
                     BeihuoJson[cargoNumber][color]['products'][height]['cost'] = BeihuoJson[cargoNumber][color]['products'][height]['price']*BeihuoJson[cargoNumber][color]['products'][height]['quantity']
-        self.GetTable(BeihuoJson)
+        self.GetTable(BeihuoJson, isPrintOwn)
 
-    def GetTable(self, BeihuoJson):
+    def GetTable(self, BeihuoJson, isPrintOwn):
         # 制表
         productsCountByShopName = {}
         BeihuoList = []
@@ -441,6 +456,8 @@ class Window:
 
         sumCountX = 0
         for _list in BeihuoTable:
+            if (not isPrintOwn) and (_list[1] == "朝新" or _list[2] == "本厂"):
+                continue
             BH_sheet.write(BH_x,BH_y, _list[0])
             BH_y += 1
             BH_sheet.write(BH_x, BH_y, _list[1])
