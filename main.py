@@ -22,7 +22,6 @@ import PySide2
 
 import _thread
 
-
 dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, 'plugins', 'platforms')
 os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
@@ -123,8 +122,7 @@ def GetCost(cargoNumber,skuInfosValue, colNum=0):
             rowIndex = t
             break
     if rowIndex == -1:
-        print(1)
-        print(cargoNumber + "==========" + worksheet.cell(t, colNum).value)
+        print(cargoNumber + "1==========" + worksheet.cell(t, colNum).value)
         return -1
     colIndex = CalPriceLocation(skuInfosValue)
     if colIndex != None:
@@ -133,7 +131,7 @@ def GetCost(cargoNumber,skuInfosValue, colNum=0):
         _price = ''
     if _price == '':
         print(rowIndex, colIndex)
-        print(cargoNumber + "==========" + worksheet.cell(t, colNum).value)
+        print(cargoNumber + "2==========" + worksheet.cell(t, colNum).value)
         _price = -1
     return float(_price)
 
@@ -478,10 +476,16 @@ class Window:
             BH_sheet.write(BH_x, BH_y, amount)
             BH_y += 1
             # 插图
-            picData = self.RequestPic(_list[5])
+            picData = self.RequestPic(_list[5]).read()
 
             image_data = io.BytesIO(picData)
+
             BH_sheet.insert_image(BH_x, BH_y, _list[4], {'image_data': image_data, 'x_offset': 5, 'x_scale': 0.1, 'y_scale': 0.1})
+
+            # 保存图片
+            imageName = _list[5].split('!!')[0].split('/')[-1]
+            with open(imageName+'.jpg', 'wb') as file:
+                file.write(image_data.getvalue())  # 保存到本地
 
             if _list[1] != shopNameTmp or _list == BeihuoTable[-1]:
                 if _list == BeihuoTable[-1]:
@@ -509,15 +513,14 @@ class Window:
         while flag:
             try:
                 self.LogOut("<a href='" + url + "'>" + url + "</a>")
-                picData = urllib.request.urlopen(url).read()
+                picData = urllib.request.urlopen(url)
                 flag = False
-                time.sleep(3)
             except:
                 self.LogOut("# 获取图片异常 重试")
                 if self.errorUrl != url:
                     self.errorUrl = url
-                    QDesktopServices.openUrl(QUrl(self.errorUrl))
-                time.sleep(3)
+                    # QDesktopServices.openUrl(QUrl(self.errorUrl))
+                time.sleep(2)
 
         return picData
 
