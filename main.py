@@ -22,6 +22,8 @@ import PySide2
 
 import _thread
 
+import common.ImageHandler as ImageHandler
+
 dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, 'plugins', 'platforms')
 os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
@@ -476,16 +478,37 @@ class Window:
             BH_sheet.write(BH_x, BH_y, amount)
             BH_y += 1
             # 插图
-            picData = self.RequestPic(_list[5]).read()
+            imageName = _list[5].split('.jpg')[0].split('/')[-1]
+            if ImageHandler.IsImageExist(imageName) :
+                # 本地存有图片，读出
+                imageData = ImageHandler.ReadImageFromDir(imageName)
 
-            image_data = io.BytesIO(picData)
+                print("读取本地图片")
+            else:
+                self.LogOut("下载图片")
+                print("下载图片")
+                rt  = self.RequestPic(_list[5])
 
-            BH_sheet.insert_image(BH_x, BH_y, _list[4], {'image_data': image_data, 'x_offset': 5, 'x_scale': 0.1, 'y_scale': 0.1})
 
-            # 保存图片
-            imageName = _list[5].split('!!')[0].split('/')[-1]
-            with open(imageName+'.jpg', 'wb') as file:
-                file.write(image_data.getvalue())  # 保存到本地
+                if rt == 420:
+                    # 本地存有图片，读出
+                    imageData = ImageHandler.ReadImageFromDir(imageName)
+
+                    print("读取到手动下载图片")
+                else:
+
+                    imageDataRaw =rt.read()
+
+                    imageData = io.BytesIO(imageDataRaw)
+
+                    BH_sheet.insert_image(BH_x, BH_y, _list[4],
+                                          {'image_data': imageData, 'x_offset': 5, 'x_scale': 0.1, 'y_scale': 0.1})
+                    # 保存图片
+                    ImageHandler.SaveImage(imageData.getvalue(), imageName)
+
+            BH_sheet.insert_image(BH_x, BH_y, _list[4],
+                                  {'image_data': imageData, 'x_offset': 5, 'x_scale': 0.1, 'y_scale': 0.1})
+
 
             if _list[1] != shopNameTmp or _list == BeihuoTable[-1]:
                 if _list == BeihuoTable[-1]:
@@ -519,8 +542,15 @@ class Window:
                 self.LogOut("# 获取图片异常 重试")
                 if self.errorUrl != url:
                     self.errorUrl = url
-                    # QDesktopServices.openUrl(QUrl(self.errorUrl))
-                time.sleep(2)
+                # QDesktopServices.openUrl(QUrl(self.errorUrl))
+                time.sleep(3)
+
+                imageName = url.split('.jpg')[0].split('/')[-1]
+                print(imageName)
+                if ImageHandler.IsImageExist(imageName):
+                    return 420
+
+            # picData = urllib.request.urlopen(url)
 
         return picData
 
