@@ -36,4 +36,5 @@ ENV/
 
 dist/
 build/
+images/
 *.xlsx
