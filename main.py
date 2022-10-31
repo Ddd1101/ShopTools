@@ -578,6 +578,8 @@ class Window:
         return picData
 
 if __name__ == '__main__':
+    # 高分辨率适配
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
     app = QApplication([])
     w = Window()
     w.ui.show()
