@@ -376,7 +376,6 @@ class Window:
     def GetBeihuoJson(self, orderList, isPrintOwn, mode=0, limitDeliveredTime = {}):
         BeihuoJson = {}
         for order in orderList:
-            print(order)
             if ('sellerRemarkIcon' in order['baseInfo']) and (order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
                 continue
             else:
@@ -489,9 +488,6 @@ class Window:
             BH_sheet.write(BH_x, BH_y, _list[4])
             BH_y += 1
 
-            if _list[4].split('\n').size() >= 2:
-                BH_sheet.write(BH_x, BH_y + 3, '多尺码')
-
             amount = ""
             for height in _list[6]:
                 if amount != "":
@@ -500,6 +496,11 @@ class Window:
 
             BH_sheet.write(BH_x, BH_y, amount)
             BH_y += 1
+
+            # 多尺码标识
+            if len(amount.split('\n')) >= 2:
+                BH_sheet.write(BH_x, BH_y + 3, '多尺码')
+
             # 插图
             imageName = _list[5].split('.jpg')[0].split('/')[-1]
             if ImageHandler.IsImageExist(imageName) :
