@@ -209,12 +209,13 @@ class Window:
         qfile.close()
         self.ui = QUiLoader().load(qfile)
 
-        # 时间
+        # 订单时间
         today = datetime.now()
         self.ui.startTime.setDateTime(QDateTime(QDate(today.year, today.month, today.day - 1), QTime(0, 0, 0)))
         self.ui.endTime.setDateTime(QDateTime(QDate(today.year, today.month, today.day + 1), QTime(0, 0, 0)))
 
-        self.ui.deleveredStartTime.setDateTime(QDateTime(QDate(today.year, today.month, today.day - 1), QTime(0, 0, 0)))
+        # 发货时间
+        self.ui.deleveredStartTime.setDateTime(QDateTime(QDate(today.year, today.month, today.day), QTime(0, 0, 0)))
         self.ui.deleveredEndTime.setDateTime(QDateTime(QDate(today.year, today.month, today.day + 1), QTime(0, 0, 0)))
 
         self.ui.priceTablePath.setText("price.xlsx")
