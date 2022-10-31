@@ -193,7 +193,6 @@ def GetSingleTradeData(data, shopName):
     data['access_token'] = access_token[shopName]
     _aop_signature = CalculateSignature(request_type + "alibaba.trade.get.sellerView/" + AppKey[shopName], data, shopName)
     data['_aop_signature'] = _aop_signature
-    print(data)
     url = base_url + request_type + "alibaba.trade.get.sellerView/" + AppKey[shopName]
     response = requests.post(url, data=data)
 
@@ -325,9 +324,6 @@ class Window:
         elif orderStatus == 3:
             self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerpay', shopName, isPrintOwn, mode, limitDeliveredTime)
 
-
-
-
         self.LogOut("# 统计完成 \n")
         self.LogOut("###############################################################")
 
@@ -352,8 +348,6 @@ class Window:
                 data = {'page': str(pageId + 1), 'createStartTime': createStartTime, 'createEndTime': createEndTime,
                         'orderStatus': orderstatus, 'needMemoInfo': 'true'}
                 response = GetTradeData(data, shopName)
-
-                # print(response['result'])
 
                 if orderstatus == 'waitsellersend' or orderstatus == 'waitbuyerreceive':
                     for order in response['result']:
@@ -381,6 +375,7 @@ class Window:
     def GetBeihuoJson(self, orderList, isPrintOwn, mode=0, limitDeliveredTime = {}):
         BeihuoJson = {}
         for order in orderList:
+            print(order)
             if ('sellerRemarkIcon' in order['baseInfo']) and (order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
                 continue
             else:
@@ -389,7 +384,7 @@ class Window:
 
                 if 'allDeliveredTime' in order['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
                     allDeliveredTime = int(order['baseInfo']['allDeliveredTime'][:-8])
-                    if allDeliveredTime >= limitDeliveredTime['deleveredStartTime'] and allDeliveredTime <= limitDeliveredTime['deleveredEndTime']:
+                    if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > limitDeliveredTime['deleveredEndTime']:
                         continue
 
                 for productItem in order['productItems']:
@@ -482,16 +477,19 @@ class Window:
         for _list in BeihuoTable:
             if (not isPrintOwn) and (_list[1] == "朝新" or _list[2] == "本厂"):
                 continue
-            BH_sheet.write(BH_x,BH_y, _list[0])
+            BH_sheet.write(BH_x,BH_y, _list[0]) # 货号
             BH_y += 1
             BH_sheet.write(BH_x, BH_y, _list[1])
             BH_y += 1
-            BH_sheet.write(BH_x, BH_y, _list[2])
-            BH_y += 1
+            # BH_sheet.write(BH_x, BH_y, _list[2])
+            # BH_y += 1
             BH_sheet.write(BH_x, BH_y, _list[3])
             BH_y += 1
             BH_sheet.write(BH_x, BH_y, _list[4])
             BH_y += 1
+
+            if _list[4].split('\n').size() >= 2:
+                BH_sheet.write(BH_x, BH_y + 3, '多尺码')
 
             amount = ""
             for height in _list[6]:
@@ -507,10 +505,9 @@ class Window:
                 # 本地存有图片，读出
                 imageData = ImageHandler.ReadImageFromDir(imageName)
 
-                print("读取本地图片")
+                self.LogOut("读取本地图片")
             else:
                 self.LogOut("下载图片")
-                print("下载图片")
                 rt  = self.RequestPic(_list[5])
 
 
@@ -518,20 +515,20 @@ class Window:
                     # 本地存有图片，读出
                     imageData = ImageHandler.ReadImageFromDir(imageName)
 
-                    print("读取到手动下载图片")
+                    self.LogOut("读取到手动下载图片")
                 else:
 
                     imageDataRaw =rt.read()
 
                     imageData = io.BytesIO(imageDataRaw)
 
-                    BH_sheet.insert_image(BH_x, BH_y, _list[4],
-                                          {'image_data': imageData, 'x_offset': 5, 'x_scale': 0.1, 'y_scale': 0.1})
+                    # BH_sheet.insert_image(BH_x, BH_y, _list[4],
+                    #                       {'image_data': imageData, 'x_offset': 5, 'x_scale': 0.1, 'y_scale': 0.1})
                     # 保存图片
                     ImageHandler.SaveImage(imageData.getvalue(), imageName)
 
             BH_sheet.insert_image(BH_x, BH_y, _list[4],
-                                  {'image_data': imageData, 'x_offset': 5, 'x_scale': 0.1, 'y_scale': 0.1})
+                                  {'image_data': imageData, 'x_offset': 3, 'x_scale': 0.14, 'y_scale': 0.14})
 
 
             if _list[1] != shopNameTmp or _list == BeihuoTable[-1]:
@@ -539,15 +536,15 @@ class Window:
                     sumCountX += 5
                 if shopNameTmp != '':
                     self.LogOut(shopNameTmp + ' 拿货总件数 ： ' + str(productsCountByShopName[shopNameTmp][0]) + "  ||  总货款： " + str(round(productsCountByShopName[shopNameTmp][1],3)))
-                    BH_sheet.write(sumCountX, 1, shopNameTmp + ' 拿货总件数 ： ' + str(productsCountByShopName[shopNameTmp][0]) + "  ||  总货款： " + str(round(productsCountByShopName[shopNameTmp][1],3)))
+                    # BH_sheet.write(sumCountX, 1, shopNameTmp + ' 拿货总件数 ： ' + str(productsCountByShopName[shopNameTmp][0]) + "  ||  总货款： " + str(round(productsCountByShopName[shopNameTmp][1],3)))
                 shopNameTmp = _list[1]
 
             sumCountX = BH_x + 1
 
-            if len(_list[6]) >= 4:
+            if len(_list[6]) >= 5:
                 BH_x += 2
             else:
-                theta = 4 - len(_list[6])
+                theta = 5 - len(_list[6])
                 BH_x = BH_x + theta + 2
 
             BH_y =  0
@@ -559,18 +556,18 @@ class Window:
         flag = True
         while flag:
             try:
-                self.LogOut("<a href='" + url + "'>" + url + "</a>")
+                if self.errorUrl != url:
+                    self.LogOut("<a href='" + url + "'>" + url + "</a>")
                 picData = urllib.request.urlopen(url)
                 flag = False
             except:
                 self.LogOut("# 获取图片异常 重试")
                 if self.errorUrl != url:
                     self.errorUrl = url
-                # QDesktopServices.openUrl(QUrl(self.errorUrl))
+                QDesktopServices.openUrl(QUrl(self.errorUrl))
                 time.sleep(3)
 
                 imageName = url.split('.jpg')[0].split('/')[-1]
-                print(imageName)
                 if ImageHandler.IsImageExist(imageName):
                     return 420
 
