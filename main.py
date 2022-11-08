@@ -41,8 +41,10 @@ path = os.path.realpath(os.curdir)
 
 price_path = path + '/price.xlsx'
 
-request_type = "param2/1/com.alibaba.trade/"
-url = base_url + request_type
+request_type = {
+    'trade':"param2/1/com.alibaba.trade/",
+    'delivery':'param2/1/com.alibaba.logistics/'
+}
 
 def GetPriceGrid():
     workbook = xlrd.open_workbook(price_path)  # 打开工作簿
@@ -181,9 +183,19 @@ def CalculateSignature(urlPath,data, shopName):
 # 交易数据获取  默认1页
 def GetTradeData(data, shopName):
     data['access_token'] = access_token[shopName]
-    _aop_signature = CalculateSignature(request_type + "alibaba.trade.getSellerOrderList/" + AppKey[shopName], data, shopName)
+    _aop_signature = CalculateSignature(request_type['trade'] + "alibaba.trade.getSellerOrderList/" + AppKey[shopName], data, shopName)
     data['_aop_signature'] = _aop_signature
-    url = base_url + request_type + "alibaba.trade.getSellerOrderList/" + AppKey[shopName]
+    url = base_url + request_type['trade'] + "alibaba.trade.getSellerOrderList/" + AppKey[shopName]
+    response = requests.post(url, data=data)
+
+    return response.json()
+
+# 已发货物流信息
+def GetDeliveryData(data, shopName):
+    data['access_token'] = access_token[shopName]
+    _aop_signature = CalculateSignature(request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + AppKey[shopName], data, shopName)
+    data['_aop_signature'] = _aop_signature
+    url = base_url + request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + AppKey[shopName]
     response = requests.post(url, data=data)
 
     return response.json()
@@ -191,12 +203,75 @@ def GetTradeData(data, shopName):
 
 def GetSingleTradeData(data, shopName):
     data['access_token'] = access_token[shopName]
-    _aop_signature = CalculateSignature(request_type + "alibaba.trade.get.sellerView/" + AppKey[shopName], data, shopName)
+    _aop_signature = CalculateSignature(request_type['trade'] + "alibaba.trade.get.sellerView/" + AppKey[shopName], data, shopName)
     data['_aop_signature'] = _aop_signature
-    url = base_url + request_type + "alibaba.trade.get.sellerView/" + AppKey[shopName]
+    url = base_url + request_type['trade'] + "alibaba.trade.get.sellerView/" + AppKey[shopName]
     response = requests.post(url, data=data)
 
     return response.json()
+
+# 获取订单号列表
+# 筛除刷单
+def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode = 0, limitDeliveredTime = {}):
+    orderList = []
+
+    orderstatusList = orderstatusStr.split(',')
+
+    for orderstatus in orderstatusList:
+        data = {'createStartTime': createStartTime, 'createEndTime': createEndTime, 'orderStatus': orderstatus,
+                'needMemoInfo': 'true'}
+        response = GetTradeData(data, shopName)
+        if orderstatus == 'waitsellersend' :
+            orderstatusStr = '待发货'
+        if orderstatus == 'waitbuyerreceive' :
+            orderstatusStr = '已发货'
+        # self.LogOut('# ' + orderstatusStr + ' : ' + str(response['totalRecord']) + '条记录')
+        pageNum = CalPageNum(response['totalRecord'])
+
+        # 规格化数据
+        for pageId in range(pageNum):
+            data = {'page': str(pageId + 1), 'createStartTime': createStartTime, 'createEndTime': createEndTime,
+                    'orderStatus': orderstatus, 'needMemoInfo': 'true'}
+            response = GetTradeData(data, shopName)
+
+            if orderstatus == 'waitsellersend' or orderstatus == 'waitbuyerreceive':
+                for order in response['result']:
+                    if ('sellerRemarkIcon' in order['baseInfo']) and ( order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
+                        continue
+                    elif mode != 0 and 'sellerRemarkIcon' not in order['baseInfo']:
+                        if mode == 1:
+                            order['baseInfo']['sellerRemarkIcon'] = '1'
+                        elif mode == 4:
+                            order['baseInfo']['sellerRemarkIcon'] = '4'
+
+            orderList += response['result']
+
+    return orderList
+
+def CheckDelivery2(createStartTime, createEndTime, orderstatusStr, shopName, mode = 0, limitDeliveredTime = {}):
+    # 1. 获得待查询订单列表
+    orderIdListRaw = GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode, limitDeliveredTime)
+
+    orderIdList = []
+
+    deliveryErrorList = []
+
+    for each in orderIdListRaw:
+        if 'allDeliveredTime' in each['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
+            allDeliveredTime = int(each['baseInfo']['allDeliveredTime'][:-8])
+            if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > limitDeliveredTime[
+                'deleveredEndTime']:
+                continue
+        orderIdList.append(each['baseInfo']['idOfStr'])
+
+    # 2. 查询物流信息
+    for orderId in orderIdList:
+        data = {'orderId': int(orderId), 'webSite': '1688'}
+        response = GetDeliveryData(data, shopName)
+        if 'errorMessage' in response and response['errorMessage'] == '该订单没有物流跟踪信息。':
+            deliveryErrorList.append(orderId)
+
+    return deliveryErrorList
 
 class Window:
 
@@ -250,6 +325,55 @@ class Window:
 
         self.ui.saveFilePath.setText("BHtmp")
         self.ui.saveFilePathButton.clicked.connect(self.CheckSaveFilePath)
+
+        # 物流检查按钮
+        self.ui.checkDelivery.clicked.connect(self.CheckDelivery)
+
+    def CheckDelivery(self):
+        self.LogOut("# 启动计算时间 : " + self.calStartTime.strftime('%Y-%m-%d %H:%M:%S'))
+        shopId = self.ui.shopName.currentIndex() + 1
+        shopName = self.ui.shopName.currentText()
+        mode = self.ui.Tag.currentIndex()
+
+        orderStatus = self.ui.orderStatus.currentIndex()
+
+        startYear = self.ui.startTime.date().toString("yyyy")
+        startMonth = self.ui.startTime.date().toString("MM")
+        startDay = self.ui.startTime.date().toString("dd")
+
+        createStartTime = datetime(int(startYear), int(startMonth), int(startDay)).strftime('%Y%m%d') + '000000000+0800'
+
+        endYear = self.ui.endTime.date().toString("yyyy")
+        endMonth = self.ui.endTime.date().toString("MM")
+        endDay = self.ui.endTime.date().toString("dd")
+        deleveredStartTime = int(self.ui.deleveredStartTime.dateTime().toString('yyyyMMddHHmmss'))
+        deleveredEndTime = int(self.ui.deleveredEndTime.dateTime().toString('yyyyMMddHHmmss'))
+
+        createEndTime = datetime(int(endYear), int(endMonth), int(endDay)).strftime('%Y%m%d') + '000000000+0800'
+
+        isPrintOwn = self.ui.IsPrintOwn.isChecked()
+
+        self.LogOut("# 店铺名 ：" + shopName)
+        self.LogOut("# 色标 ：" + self.ui.Tag.currentText())
+        self.LogOut("# 订单开始时间 ：" + self.ui.startTime.date().toString("yyyy-MM-dd"))
+        self.LogOut("# 订单截止时间 ：" + self.ui.endTime.date().toString("yyyy-MM-dd"))
+
+        isLimitDeleveredTime = self.ui.isLimitDeleveredTime.isChecked()
+
+        if isLimitDeleveredTime:
+            limitDeliveredTime = {
+                'deleveredStartTime': deleveredStartTime,
+                'deleveredEndTime': deleveredEndTime
+            }
+            self.LogOut("# 订单开始时间 ：" + self.ui.startTime.date().toString("yyyy-MM-dd"))
+            self.LogOut("# 订单截止时间 ：" + self.ui.endTime.date().toString("yyyy-MM-dd"))
+        else:
+            limitDeliveredTime = {}
+
+        try:
+            _thread.start_new_thread(CheckDelivery2, (createStartTime, createEndTime, 'waitbuyerreceive', shopName, mode, limitDeliveredTime))
+        except:
+            self.LogOut("Error: 无法计算启动线程")
 
     def click_window2(self):
         QDesktopServices.openUrl(QUrl(self.errorUrl))
@@ -308,7 +432,7 @@ class Window:
             limitDeliveredTime = {}
 
         try:
-            _thread.start_new_thread(self.OrderList, (shopName, int(mode), createStartTime, createEndTime, orderStatus, isPrintOwn, limitDeliveredTime))
+            _thread.start_new_thread(self.OrderList, (shopName, int(mode), createStartTime, createEndTime, orderStatus, limitDeliveredTime))
         except:
             self.LogOut("Error: 无法计算启动线程")
 

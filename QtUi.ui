@@ -260,7 +260,7 @@
   <widget class="QPushButton" name="commit">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>40</x>
      <y>440</y>
      <width>111</width>
      <height>31</height>
@@ -459,7 +459,7 @@
   <widget class="QPushButton" name="commit_2">
    <property name="geometry">
     <rect>
-     <x>290</x>
+     <x>190</x>
      <y>440</y>
      <width>111</width>
      <height>31</height>
@@ -472,6 +472,24 @@
    </property>
    <property name="text">
     <string>核算成本</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="checkDelivery">
+   <property name="geometry">
+    <rect>
+     <x>340</x>
+     <y>440</y>
+     <width>111</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>异常物流检测</string>
    </property>
   </widget>
  </widget>
