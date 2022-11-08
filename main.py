@@ -24,6 +24,9 @@ import _thread
 
 import Common.ImageHandler as ImageHandler
 
+import platform
+os.environ['QT_MAC_WANTS_LAYER'] = '1'
+
 dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, 'plugins', 'platforms')
 os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
@@ -91,22 +94,22 @@ def CalPriceLocationENCode(_size):
         return -1
 
     if _size[0] == 'S' or _size[0] == 's':
-        return 28
+        return 24
 
     if _size[0] == 'M' or _size[0] == 'm':
-        return 29
+        return 25
 
     if _size[0] == 'L' or _size[0] == 'l':
-        return 30
+        return 26
 
     if _size[0] == 'x' or _size[0] == 'X':
         if _size[1] == 'L' or _size[1] == 'l':
-            return 31
+            return 27
         elif _size[1] == 'x' or _size[1] == 'X':
             if _size[2] == 'L' or _size[2] == 'l':
-                return 32
+                return 28
             elif _size[2] == 'x' or _size[2] == 'X':
-                return 33
+                return 29
 
     return -1
 
@@ -115,7 +118,7 @@ def CalPriceLocation(_size):
         return CalPriceLocationENCode(_size)
     # print(CalSize(_size))
     theta = (CalSize(_size) - 90)/5
-    _col = 9 + theta
+    _col = 5 + theta
     # print(_col)
     return _col
 
@@ -126,7 +129,7 @@ def GetCost(cargoNumber,skuInfosValue, colNum=0):
             rowIndex = t
             break
     if rowIndex == -1:
-        print(cargoNumber + "1==========" + worksheet.cell(t, colNum).value)
+        print(cargoNumber + " 1==========" + worksheet.cell(t, colNum).value)
         return -1
     colIndex = CalPriceLocation(skuInfosValue)
     if colIndex != None:
@@ -135,7 +138,7 @@ def GetCost(cargoNumber,skuInfosValue, colNum=0):
         _price = ''
     if _price == '':
         print(rowIndex, colIndex)
-        print(cargoNumber + "2==========" + worksheet.cell(t, colNum).value)
+        print(cargoNumber + " 2==========" + worksheet.cell(t, colNum).value)
         _price = -1
     return float(_price)
 
@@ -722,6 +725,7 @@ class Window:
 
 if __name__ == '__main__':
     # 高分辨率适配
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
     app = QApplication([])
     w = Window()
