@@ -5,7 +5,7 @@ from PySide2.QtCore import QFile, QDate,   QDateTime , QTime, QUrl
 from PySide2.QtGui import QDesktopServices
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 import xlsxwriter
 import io
 import urllib
@@ -22,7 +22,7 @@ import PySide2
 
 import _thread
 
-import common.ImageHandler as ImageHandler
+import Common.ImageHandler as ImageHandler
 
 dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, 'plugins', 'platforms')
@@ -210,9 +210,11 @@ class Window:
         self.ui = QUiLoader().load(qfile)
 
         # 订单时间
-        today = datetime.now()
-        self.ui.startTime.setDateTime(QDateTime(QDate(today.year, today.month, today.day - 1), QTime(0, 0, 0)))
-        self.ui.endTime.setDateTime(QDateTime(QDate(today.year, today.month, today.day + 1), QTime(0, 0, 0)))
+        today = datetime.strptime(str(date.today()), '%Y-%m-%d')
+        startDateTime = today + timedelta(days = -10)
+        endDateTime   = today + timedelta(days = 1)
+        self.ui.startTime.setDateTime(QDateTime(QDate(startDateTime.year, startDateTime.month, startDateTime.day), QTime(0, 0, 0)))
+        self.ui.endTime.setDateTime(QDateTime(QDate(endDateTime.year, endDateTime.month, endDateTime.day), QTime(0, 0, 0)))
 
         # 发货时间
         self.ui.deleveredStartTime.setDateTime(QDateTime(QDate(today.year, today.month, today.day), QTime(0, 0, 0)))
@@ -231,9 +233,9 @@ class Window:
         self.ui.Tag.addItem("黄")
         self.ui.Tag.addItem("按单号")
 
+        self.ui.orderStatus.addItem("已发货")
         self.ui.orderStatus.addItem("待发货 + 已发货")
         self.ui.orderStatus.addItem("待发货")
-        self.ui.orderStatus.addItem("已发货")
         self.ui.orderStatus.addItem("待付款")
 
         self.ui.commit.clicked.connect(self.CheckAllParams)
@@ -272,11 +274,13 @@ class Window:
 
         # timeType = self.ui.timeType.currentIndex()
 
+        tmp = self.ui.startTime.date();
+
         startYear = self.ui.startTime.date().toString("yyyy")
         startMonth = self.ui.startTime.date().toString("MM")
         startDay = self.ui.startTime.date().toString("dd")
 
-        createStartTime = datetime(int(startYear),int(startMonth),int(startDay)).strftime('%Y%m%d') + '000000000+0800'
+        createStartTime = datetime(int(startYear), int(startMonth), int(startDay)).strftime('%Y%m%d') + '000000000+0800'
 
         endYear = self.ui.endTime.date().toString("yyyy")
         endMonth = self.ui.endTime.date().toString("MM")
@@ -306,7 +310,7 @@ class Window:
         try:
             _thread.start_new_thread(self.OrderList, (shopName, int(mode), createStartTime, createEndTime, orderStatus, isPrintOwn, limitDeliveredTime))
         except:
-            self.LogOut("Error: 无法启动线程")
+            self.LogOut("Error: 无法计算启动线程")
 
     def LogOut(self, text):
         self.ui.output.append(text)
