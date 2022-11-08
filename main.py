@@ -193,9 +193,10 @@ def GetTradeData(data, shopName):
 # 已发货物流信息
 def GetDeliveryData(data, shopName):
     data['access_token'] = access_token[shopName]
-    _aop_signature = CalculateSignature(request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + AppKey[shopName], data, shopName)
+    _aop_signature = CalculateSignature(request_type['delivery'] + "alibaba.trade.getLogisticsInfos.buyerView/" + AppKey[shopName], data, shopName)
     data['_aop_signature'] = _aop_signature
-    url = base_url + request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + AppKey[shopName]
+    url = base_url + request_type['delivery'] + "alibaba.trade.getLogisticsInfos.buyerView/" + AppKey[shopName]
+
     response = requests.post(url, data=data)
 
     return response.json()
@@ -248,33 +249,7 @@ def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode
 
     return orderList
 
-def CheckDelivery2(createStartTime, createEndTime, orderstatusStr, shopName, mode = 0, limitDeliveredTime = {}):
-    # 1. 获得待查询订单列表
-    orderIdListRaw = GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode, limitDeliveredTime)
-
-    orderIdList = []
-
-    deliveryErrorList = []
-
-    for each in orderIdListRaw:
-        if 'allDeliveredTime' in each['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
-            allDeliveredTime = int(each['baseInfo']['allDeliveredTime'][:-8])
-            if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > limitDeliveredTime[
-                'deleveredEndTime']:
-                continue
-        orderIdList.append(each['baseInfo']['idOfStr'])
-
-    # 2. 查询物流信息
-    for orderId in orderIdList:
-        data = {'orderId': int(orderId), 'webSite': '1688'}
-        response = GetDeliveryData(data, shopName)
-        if 'errorMessage' in response and response['errorMessage'] == '该订单没有物流跟踪信息。':
-            deliveryErrorList.append(orderId)
-
-    return deliveryErrorList
-
 class Window:
-
     def __init__(self):
         super(Window, self).__init__()
 
@@ -285,15 +260,15 @@ class Window:
         self.ui = QUiLoader().load(qfile)
 
         # 订单时间
-        today = datetime.strptime(str(date.today()), '%Y-%m-%d')
-        startDateTime = today + timedelta(days = -10)
-        endDateTime   = today + timedelta(days = 1)
-        self.ui.startTime.setDateTime(QDateTime(QDate(startDateTime.year, startDateTime.month, startDateTime.day), QTime(0, 0, 0)))
-        self.ui.endTime.setDateTime(QDateTime(QDate(endDateTime.year, endDateTime.month, endDateTime.day), QTime(0, 0, 0)))
+        todayTmp = datetime.strptime(str(date.today()), '%Y-%m-%d')
+        startDateTimeTmp = todayTmp + timedelta(days = -5)
+        endDateTimeTmp   = todayTmp + timedelta(days = 1)
+        self.ui.startTime.setDateTime(QDateTime(QDate(startDateTimeTmp.year, startDateTimeTmp.month, startDateTimeTmp.day), QTime(0, 0, 0)))
+        self.ui.endTime.setDateTime(QDateTime(QDate(endDateTimeTmp.year, endDateTimeTmp.month, endDateTimeTmp.day), QTime(0, 0, 0)))
 
         # 发货时间
-        self.ui.deleveredStartTime.setDateTime(QDateTime(QDate(today.year, today.month, today.day), QTime(0, 0, 0)))
-        self.ui.deleveredEndTime.setDateTime(QDateTime(QDate(today.year, today.month, today.day + 1), QTime(0, 0, 0)))
+        self.ui.deleveredStartTime.setDateTime(QDateTime(QDate(todayTmp.year, todayTmp.month, todayTmp.day), QTime(0, 0, 0)))
+        self.ui.deleveredEndTime.setDateTime(QDateTime(QDate(todayTmp.year, todayTmp.month, todayTmp.day + 1), QTime(0, 0, 0)))
 
         self.ui.priceTablePath.setText("price.xlsx")
         self.ui.priceTablePathButton.clicked.connect(self.CheckPriceTablePath)
@@ -313,7 +288,7 @@ class Window:
         self.ui.orderStatus.addItem("待发货")
         self.ui.orderStatus.addItem("待付款")
 
-        self.ui.commit.clicked.connect(self.CheckAllParams)
+        self.ui.commit.clicked.connect(self.CalculateBeiHuoTable)
         # self.ui.openUrl.clicked.connect(self.click_window2)
         # self.ui.timeType.addItem("按发货时间")
         # self.ui.timeType.addItem("按付款时间")
@@ -323,57 +298,78 @@ class Window:
 
         self.calStartTime = datetime.now()
 
-        self.ui.saveFilePath.setText("BHtmp")
+        self.ui.saveFilePath.setText("备货单")
         self.ui.saveFilePathButton.clicked.connect(self.CheckSaveFilePath)
 
         # 物流检查按钮
         self.ui.checkDelivery.clicked.connect(self.CheckDelivery)
 
+        #
+        self.shopId = self.ui.shopName.currentIndex() + 1
+        self.shopName = self.ui.shopName.currentText()
+        self.mode = self.ui.Tag.currentIndex()
+
+        self.orderStatus = self.ui.orderStatus.currentIndex()
+
+        self.startYear = self.ui.startTime.date().toString("yyyy")
+        self.startMonth = self.ui.startTime.date().toString("MM")
+        self.startDay = self.ui.startTime.date().toString("dd")
+
+        self.createStartTime = datetime(int(self.startYear), int(self.startMonth), int(self.startDay)).strftime('%Y%m%d') + '000000000+0800'
+
+        self.endYear = self.ui.endTime.date().toString("yyyy")
+        self.endMonth = self.ui.endTime.date().toString("MM")
+        self.endDay = self.ui.endTime.date().toString("dd")
+        self.deleveredStartTime = int(self.ui.deleveredStartTime.dateTime().toString('yyyyMMddHHmmss'))
+        self.deleveredEndTime = int(self.ui.deleveredEndTime.dateTime().toString('yyyyMMddHHmmss'))
+
+        self.createEndTime = datetime(int(self.endYear), int(self.endMonth), int(self.endDay)).strftime('%Y%m%d') + '000000000+0800'
+
+        self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
+
     def CheckDelivery(self):
-        self.LogOut("# 启动计算时间 : " + self.calStartTime.strftime('%Y-%m-%d %H:%M:%S'))
-        shopId = self.ui.shopName.currentIndex() + 1
-        shopName = self.ui.shopName.currentText()
-        mode = self.ui.Tag.currentIndex()
-
-        orderStatus = self.ui.orderStatus.currentIndex()
-
-        startYear = self.ui.startTime.date().toString("yyyy")
-        startMonth = self.ui.startTime.date().toString("MM")
-        startDay = self.ui.startTime.date().toString("dd")
-
-        createStartTime = datetime(int(startYear), int(startMonth), int(startDay)).strftime('%Y%m%d') + '000000000+0800'
-
-        endYear = self.ui.endTime.date().toString("yyyy")
-        endMonth = self.ui.endTime.date().toString("MM")
-        endDay = self.ui.endTime.date().toString("dd")
-        deleveredStartTime = int(self.ui.deleveredStartTime.dateTime().toString('yyyyMMddHHmmss'))
-        deleveredEndTime = int(self.ui.deleveredEndTime.dateTime().toString('yyyyMMddHHmmss'))
-
-        createEndTime = datetime(int(endYear), int(endMonth), int(endDay)).strftime('%Y%m%d') + '000000000+0800'
-
-        isPrintOwn = self.ui.IsPrintOwn.isChecked()
-
-        self.LogOut("# 店铺名 ：" + shopName)
-        self.LogOut("# 色标 ：" + self.ui.Tag.currentText())
-        self.LogOut("# 订单开始时间 ：" + self.ui.startTime.date().toString("yyyy-MM-dd"))
-        self.LogOut("# 订单截止时间 ：" + self.ui.endTime.date().toString("yyyy-MM-dd"))
-
-        isLimitDeleveredTime = self.ui.isLimitDeleveredTime.isChecked()
-
-        if isLimitDeleveredTime:
-            limitDeliveredTime = {
-                'deleveredStartTime': deleveredStartTime,
-                'deleveredEndTime': deleveredEndTime
-            }
-            self.LogOut("# 订单开始时间 ：" + self.ui.startTime.date().toString("yyyy-MM-dd"))
-            self.LogOut("# 订单截止时间 ：" + self.ui.endTime.date().toString("yyyy-MM-dd"))
-        else:
-            limitDeliveredTime = {}
+        self.CheckAllParams()
 
         try:
-            _thread.start_new_thread(CheckDelivery2, (createStartTime, createEndTime, 'waitbuyerreceive', shopName, mode, limitDeliveredTime))
+            _thread.start_new_thread(self.DoCheckDelivery, (self.createStartTime, self.createEndTime, 'waitbuyerreceive', self.shopName, self.mode, self.limitDeliveredTime))
         except:
             self.LogOut("Error: 无法计算启动线程")
+
+    def DoCheckDelivery(self, createStartTime, createEndTime, orderstatusStr, shopName, mode=0, limitDeliveredTime={}):
+        # 1. 获得待查询订单列表
+        orderIdListRaw = GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode, limitDeliveredTime)
+
+        orderIdList = []
+
+        deliveryErrorList = []
+
+        for each in orderIdListRaw:
+            if 'allDeliveredTime' in each['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
+                allDeliveredTime = int(each['baseInfo']['allDeliveredTime'][:-8])
+                if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > limitDeliveredTime[
+                    'deleveredEndTime']:
+                    continue
+            orderIdList.append(each['baseInfo']['idOfStr'])
+
+        # 2. 查询物流信息
+        for orderId in orderIdList:
+            data = {'orderId': int(orderId), 'webSite': '1688'}
+            response = GetDeliveryData(data, shopName)
+            print(response)
+            print(orderId)
+            if 'errorMessage' in response and response['errorMessage'] == '该订单没有物流跟踪信息。':
+                print(response)
+                print(orderId)
+                deliveryErrorList.append(orderId)
+
+
+        # 3. 打印
+        for each in deliveryErrorList:
+            self.LogOut('超时： ' + each)
+
+        self.LogOut('# 超时订单检测完成 ')
+
+        return deliveryErrorList
 
     def click_window2(self):
         QDesktopServices.openUrl(QUrl(self.errorUrl))
@@ -390,57 +386,58 @@ class Window:
 
     def CheckAllParams(self):
         self.LogOut("# 启动计算时间 : " + self.calStartTime.strftime('%Y-%m-%d %H:%M:%S'))
-        shopId = self.ui.shopName.currentIndex() + 1
-        shopName = self.ui.shopName.currentText()
-        mode = self.ui.Tag.currentIndex()
+        self.shopId = self.ui.shopName.currentIndex() + 1
+        self.shopName = self.ui.shopName.currentText()
+        self.mode = self.ui.Tag.currentIndex()
 
-        orderStatus = self.ui.orderStatus.currentIndex()
+        self.orderStatus = self.ui.orderStatus.currentIndex()
 
-        # timeType = self.ui.timeType.currentIndex()
+        self.startYear = self.ui.startTime.date().toString("yyyy")
+        self.startMonth = self.ui.startTime.date().toString("MM")
+        self.startDay = self.ui.startTime.date().toString("dd")
 
-        tmp = self.ui.startTime.date();
+        self.createStartTime = datetime(int(self.startYear), int(self.startMonth), int(self.startDay)).strftime('%Y%m%d') + '000000000+0800'
 
-        startYear = self.ui.startTime.date().toString("yyyy")
-        startMonth = self.ui.startTime.date().toString("MM")
-        startDay = self.ui.startTime.date().toString("dd")
+        self.endYear = self.ui.endTime.date().toString("yyyy")
+        self.endMonth = self.ui.endTime.date().toString("MM")
+        self.endDay = self.ui.endTime.date().toString("dd")
+        self.deleveredStartTime = int(self.ui.deleveredStartTime.dateTime().toString('yyyyMMddHHmmss'))
+        self.deleveredEndTime   = int(self.ui.deleveredEndTime.dateTime().toString('yyyyMMddHHmmss'))
 
-        createStartTime = datetime(int(startYear), int(startMonth), int(startDay)).strftime('%Y%m%d') + '000000000+0800'
+        self.createEndTime = datetime(int(self.endYear), int(self.endMonth), int(self.endDay)).strftime('%Y%m%d') + '000000000+0800'
 
-        endYear = self.ui.endTime.date().toString("yyyy")
-        endMonth = self.ui.endTime.date().toString("MM")
-        endDay = self.ui.endTime.date().toString("dd")
-        deleveredStartTime = int(self.ui.deleveredStartTime.dateTime().toString('yyyyMMddHHmmss'))
-        deleveredEndTime   = int(self.ui.deleveredEndTime.dateTime().toString('yyyyMMddHHmmss'))
+        self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
 
-        createEndTime = datetime(int(endYear), int(endMonth), int(endDay)).strftime('%Y%m%d') + '000000000+0800'
-
-        isPrintOwn = self.ui.IsPrintOwn.isChecked()
-
-        self.LogOut("# 店铺名 ：" + shopName)
+        self.LogOut("# 店铺名 ：" + self.shopName)
         self.LogOut("# 色标 ：" + self.ui.Tag.currentText())
         self.LogOut("# 订单开始时间 ：" + self.ui.startTime.date().toString("yyyy-MM-dd"))
         self.LogOut("# 订单截止时间 ：" + self.ui.endTime.date().toString("yyyy-MM-dd"))
 
-        isLimitDeleveredTime = self.ui.isLimitDeleveredTime.isChecked()
+        self.isLimitDeleveredTime = self.ui.isLimitDeleveredTime.isChecked()
 
-        if isLimitDeleveredTime:
-            limitDeliveredTime = {
-                'deleveredStartTime':deleveredStartTime,
-                'deleveredEndTime':deleveredEndTime
+        if self.isLimitDeleveredTime:
+            self.limitDeliveredTime = {
+                'deleveredStartTime':self.deleveredStartTime,
+                'deleveredEndTime':self.deleveredEndTime
             }
         else:
-            limitDeliveredTime = {}
+            self.limitDeliveredTime = {}
+
+
+
+    def CalculateBeiHuoTable(self):
+        self.CheckAllParams()
 
         try:
-            _thread.start_new_thread(self.OrderList, (shopName, int(mode), createStartTime, createEndTime, orderStatus, limitDeliveredTime))
+            _thread.start_new_thread(self.OrderList, (self.shopName, int(self.mode), self.createStartTime, self.createEndTime, self.orderStatus, self.isPrintOwn, self.limitDeliveredTime))
         except:
             self.LogOut("Error: 无法计算启动线程")
+
 
     def LogOut(self, text):
         self.ui.output.append(text)
 
-
-    def OrderList(self, shopName, mode, createStartTime, createEndTime, orderStatus, isPrintOwn, limitDeliveredTime = {}):
+    def OrderList(self, shopName, mode, createStartTime, createEndTime, orderStatus, isPrintOwn, limitDeliveredTime):
         if mode == 5:
             orderId = int(self.ui.orderId.toPlainText())
             self.GetSingleOrder(shopName, orderId, isPrintOwn)
@@ -457,9 +454,11 @@ class Window:
         self.LogOut("###############################################################")
 
     def GetOrderBill(self, createStartTime, createEndTime, orderstatusStr, shopName, isPrintOwn, mode = 0, limitDeliveredTime = {}):
-        orderList = []
+        orderListRaw = []
 
         orderstatusList = orderstatusStr.split(',')
+
+        orderList = []
 
         for orderstatus in orderstatusList:
             data = {'createStartTime': createStartTime, 'createEndTime': createEndTime, 'orderStatus': orderstatus,
@@ -469,7 +468,7 @@ class Window:
                 orderstatusStr = '待发货'
             if orderstatus == 'waitbuyerreceive' :
                 orderstatusStr = '已发货'
-            self.LogOut('# ' + orderstatusStr + ' : ' + str(response['totalRecord']) + '条记录')
+
             pageNum = CalPageNum(response['totalRecord'])
 
             # 规格化数据
@@ -488,7 +487,21 @@ class Window:
                             elif mode == 4:
                                 order['baseInfo']['sellerRemarkIcon'] = '4'
 
-                orderList += response['result']
+                orderListRaw += response['result']
+
+
+            if len(limitDeliveredTime) >= 2:
+                for order in orderListRaw:
+                    if 'allDeliveredTime' in order['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
+                        allDeliveredTime = int(order['baseInfo']['allDeliveredTime'][:-8])
+                        if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > limitDeliveredTime['deleveredEndTime']:
+                            continue
+                        else:
+                            orderList.append(order)
+            else:
+                orderList = orderListRaw
+
+        self.LogOut('# ' + orderstatusStr + ' : ' + str(len(orderList)) + '条记录')
 
         self.GetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime)
 
@@ -500,9 +513,9 @@ class Window:
         orderList.append(tmp['result'])
         self.GetBeihuoJson(orderList, isPrintOwn, 0)
 
-
     def GetBeihuoJson(self, orderList, isPrintOwn, mode=0, limitDeliveredTime = {}):
         BeihuoJson = {}
+
         for order in orderList:
             if ('sellerRemarkIcon' in order['baseInfo']) and (order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
                 continue
@@ -510,10 +523,10 @@ class Window:
                 if mode != 0 and ('sellerRemarkIcon' not in order['baseInfo'] or order['baseInfo']['sellerRemarkIcon'] != str(mode)):
                     continue
 
-                if 'allDeliveredTime' in order['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
-                    allDeliveredTime = int(order['baseInfo']['allDeliveredTime'][:-8])
-                    if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > limitDeliveredTime['deleveredEndTime']:
-                        continue
+                # if 'allDeliveredTime' in order['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
+                #     allDeliveredTime = int(order['baseInfo']['allDeliveredTime'][:-8])
+                #     if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > limitDeliveredTime['deleveredEndTime']:
+                #         continue
 
                 for productItem in order['productItems']:
                     # 货号
@@ -594,7 +607,9 @@ class Window:
 
         # 写表
         savePath = self.ui.saveFilePath.toPlainText().split('.')[0]
-        BH_wb = xlsxwriter.Workbook(savePath + self.calStartTime.strftime("%m_%d_%H_%M_%S") + ".xlsx")
+
+        # 保存备货单
+        BH_wb = xlsxwriter.Workbook(savePath + '/' + self.calStartTime.strftime("%m_%d_%H_%M_%S") + ".xlsx")
         BH_sheet = BH_wb.add_worksheet('BH')
         BH_x = 0
         BH_y = 0
