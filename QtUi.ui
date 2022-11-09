@@ -358,6 +358,9 @@
    <property name="text">
     <string>打印本厂订单</string>
    </property>
+   <property name="autoExclusive">
+    <bool>false</bool>
+   </property>
   </widget>
   <widget class="QDateTimeEdit" name="deleveredStartTime">
    <property name="geometry">
@@ -408,6 +411,9 @@
    </property>
    <property name="text">
     <string>是否限制发货时间</string>
+   </property>
+   <property name="autoExclusive">
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QDateTimeEdit" name="deleveredEndTime">

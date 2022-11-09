@@ -348,6 +348,8 @@ class Window:
 
         try:
             _thread.start_new_thread(self.DoCheckDelivery, (self.createStartTime, self.createEndTime, 'waitbuyerreceive', self.shopName, self.mode, self.limitDeliveredTime))
+
+            self.LogOut("\n # 启动计算 请稍后 \n")
         except:
             self.LogOut("Error: 无法计算启动线程")
 
@@ -450,6 +452,8 @@ class Window:
 
         try:
             _thread.start_new_thread(self.OrderList, (self.shopName, int(self.mode), self.createStartTime, self.createEndTime, self.orderStatus, self.isPrintOwn, self.limitDeliveredTime))
+            self.LogOut("\n # 启动计算 请稍后 \n")
+
         except:
             self.LogOut("Error: 无法计算启动线程")
 
