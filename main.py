@@ -196,13 +196,26 @@ def GetTradeData(data, shopName):
 # 已发货物流信息
 def GetDeliveryData(data, shopName):
     data['access_token'] = access_token[shopName]
-    _aop_signature = CalculateSignature(request_type['delivery'] + "alibaba.trade.getLogisticsInfos.buyerView/" + AppKey[shopName], data, shopName)
+    _aop_signature = CalculateSignature(request_type['delivery'] + "alibaba.trade.getLogisticsInfos.sellerView/" + AppKey[shopName], data, shopName)
     data['_aop_signature'] = _aop_signature
-    url = base_url + request_type['delivery'] + "alibaba.trade.getLogisticsInfos.buyerView/" + AppKey[shopName]
+
+    url = base_url + request_type['delivery'] + "alibaba.trade.getLogisticsInfos.sellerView/" + AppKey[shopName]
 
     response = requests.post(url, data=data)
 
     return response.json()
+
+# 已发货物流信息+单号信息
+def GetDeliveryTraceData(data, shopName):
+    data['access_token'] = access_token[shopName]
+    _aop_signature = CalculateSignature(request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + AppKey[shopName], data, shopName)
+    data['_aop_signature'] = _aop_signature
+    url = base_url + request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + AppKey[shopName]
+
+    response = requests.post(url, data=data)
+
+    return response.json()
+
 
 
 def GetSingleTradeData(data, shopName):
@@ -354,21 +367,25 @@ class Window:
                     continue
             orderIdList.append(each['baseInfo']['idOfStr'])
 
-        # 2. 查询物流信息
+        # 2. 查询物流跟踪信息
         for orderId in orderIdList:
             data = {'orderId': int(orderId), 'webSite': '1688'}
+            response = GetDeliveryTraceData(data, shopName)
+            if 'errorMessage' in response:
+                deliveryErrorList.append([orderId])
+
+        # 3.获取物流运单号
+        for each in deliveryErrorList:
+            data = {'orderId': int(each[0]), 'webSite': '1688'}
             response = GetDeliveryData(data, shopName)
-            print(response)
-            print(orderId)
-            if 'errorMessage' in response and response['errorMessage'] == '该订单没有物流跟踪信息。':
-                print(response)
-                print(orderId)
-                deliveryErrorList.append(orderId)
+            each.append(response['result'][0]['logisticsBillNo'])
 
 
         # 3. 打印
         for each in deliveryErrorList:
-            self.LogOut('超时： ' + each)
+            self.LogOut('异常订单号：' + each[0])
+            self.LogOut('异常运单号：' + each[1])
+            self.LogOut('===================================')
 
         self.LogOut('# 超时订单检测完成 ')
 
