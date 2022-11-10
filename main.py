@@ -152,7 +152,7 @@ def GetAdressAndShopName(cargoNumber):
         return ["","",""]
     productName = worksheet.cell(rowIndex, 1).value
     adress = worksheet.cell(rowIndex, 2).value
-    shopName = worksheet.cell(rowIndex, 3).value
+    shopName = worksheet.cell(rowIndex, 2).value
     return [productName,adress,shopName]
 
 def CalPageNum(totalRecord):
@@ -383,7 +383,7 @@ class Window:
             each.append(response['result'][0]['logisticsBillNo'])
 
 
-        # 3. 打印
+        # 4. 打印
         for each in deliveryErrorList:
             self.LogOut('异常订单号：' + each[0])
             self.LogOut('异常运单号：' + each[1])
@@ -670,11 +670,13 @@ class Window:
 
             # 插图
             imageName = _list[5].split('.jpg')[0].split('/')[-1]
+            time.sleep(1)
             if ImageHandler.IsImageExist(imageName) :
                 # 本地存有图片，读出
                 imageData = ImageHandler.ReadImageFromDir(imageName)
 
                 self.LogOut("读取本地图片")
+
             else:
                 self.LogOut("下载图片")
                 rt  = self.RequestPic(_list[5])
@@ -734,7 +736,7 @@ class Window:
                 if self.errorUrl != url:
                     self.errorUrl = url
                 QDesktopServices.openUrl(QUrl(self.errorUrl))
-                time.sleep(3)
+                time.sleep(2)
 
                 imageName = url.split('.jpg')[0].split('/')[-1]
                 if ImageHandler.IsImageExist(imageName):
