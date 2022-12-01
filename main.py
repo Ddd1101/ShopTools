@@ -129,7 +129,7 @@ def GetCost(cargoNumber,skuInfosValue, colNum=0):
             rowIndex = t
             break
     if rowIndex == -1:
-        print(cargoNumber + " 1==========" + worksheet.cell(t, colNum).value)
+        print(cargoNumber + " ： 未找到对应货号" + worksheet.cell(t, colNum).value)
         return -1
     colIndex = CalPriceLocation(skuInfosValue)
     if colIndex != None:
@@ -138,10 +138,11 @@ def GetCost(cargoNumber,skuInfosValue, colNum=0):
         _price = ''
     if _price == '':
         print(rowIndex, colIndex)
-        print(cargoNumber + " 2==========" + worksheet.cell(t, colNum).value)
+        print(cargoNumber + " ： 未找到对应价格")
         _price = -1
     return float(_price)
 
+# 由货号得到产品名 - 厂家地址 - 厂家名
 def GetAdressAndShopName(cargoNumber):
     rowIndex = -1
     for t in range(1, worksheet.nrows):
@@ -642,7 +643,7 @@ class Window:
 
         sumCountX = 0
         for _list in BeihuoTable:
-            if (not isPrintOwn) and (_list[1] == "朝新" or _list[2] == "本厂"):
+            if (not isPrintOwn) and (_list[1] == "朝新" or _list[2] == "朝新"):
                 continue
             BH_sheet.write(BH_x,BH_y, _list[0]) # 货号
             BH_y += 1
@@ -745,6 +746,9 @@ class Window:
             # picData = urllib.request.urlopen(url)
 
         return picData
+
+    def CounterOutput(self, table):
+        pass
 
 if __name__ == '__main__':
     # 高分辨率适配
