@@ -31,9 +31,9 @@ dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, 'plugins', 'platforms')
 os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
 
-AppKey = {'联球制衣厂':'9468443','朝雄制衣厂':'4048570', '朝逸饰品厂':'7464845'}
-AppSecret =  {"联球制衣厂":b'SuL1xQz2I88',"朝雄制衣厂":b'vxMiqUGDZ7p',"朝逸饰品厂":b'Oo0hRGjaaPb'}
-access_token = {'联球制衣厂':'4c6a563e-a96c-41f5-a691-6d7a6f92023b','朝雄制衣厂':'f7a85f0e-fb90-40b1-9bc6-b66ad3cf120b', '朝逸饰品厂':'37454060-a51a-497d-9866-0d722a1bd5cc'}
+AppKey = {'联球制衣厂':'4977521','朝雄制衣厂':'4048570', '朝逸饰品厂':'7464845'}
+AppSecret =  {"联球制衣厂":b'dQ4jqL5blE',"朝雄制衣厂":b'vxMiqUGDZ7p',"朝逸饰品厂":b'Oo0hRGjaaPb'}
+access_token = {'联球制衣厂':'f306d106-a12b-4737-b02e-025aac26ee97','朝雄制衣厂':'f7a85f0e-fb90-40b1-9bc6-b66ad3cf120b', '朝逸饰品厂':'37454060-a51a-497d-9866-0d722a1bd5cc'}
 
 en_code = ['s','S','m','M', 'l','L','x','X']
 
