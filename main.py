@@ -31,9 +31,9 @@ dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, 'plugins', 'platforms')
 os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
 
-AppKey = {'联球制衣厂':'4977521','朝雄制衣厂':'4048570', '朝逸饰品厂':'7464845'}
-AppSecret =  {"联球制衣厂":b'dQ4jqL5blE',"朝雄制衣厂":b'vxMiqUGDZ7p',"朝逸饰品厂":b'Oo0hRGjaaPb'}
-access_token = {'联球制衣厂':'f306d106-a12b-4737-b02e-025aac26ee97','朝雄制衣厂':'f7a85f0e-fb90-40b1-9bc6-b66ad3cf120b', '朝逸饰品厂':'37454060-a51a-497d-9866-0d722a1bd5cc'}
+AppKey = {'联球制衣厂':'8052480','朝雄制衣厂':'1235061', '朝逸饰品厂':'7464845'}
+AppSecret =  {"联球制衣厂":b'3gjkZISA6L',"朝雄制衣厂":b'QbGaH9YxcqW',"朝逸饰品厂":b'Oo0hRGjaaPb'}
+access_token = {'联球制衣厂':'1ea4c929-efd7-4f40-a32d-8efb01de6141','朝雄制衣厂':'08126f65-2d55-4390-853a-3ab85b07f1d1', '朝逸饰品厂':'37454060-a51a-497d-9866-0d722a1bd5cc'}
 
 en_code = ['s','S','m','M', 'l','L','x','X']
 
@@ -538,57 +538,87 @@ class Window:
         orderList.append(tmp['result'])
         self.GetBeihuoJson(orderList, isPrintOwn, 0)
 
-    def GetBeihuoJson(self, orderList, isPrintOwn, mode=0, limitDeliveredTime = {}):
-        BeihuoJson = {}
+    # def GetBeihuoJson(self, orderList, isPrintOwn, mode=0, limitDeliveredTime = {}):
+    #     BeihuoJson = {}
+    #
+    #     for order in orderList:
+    #         if ('sellerRemarkIcon' in order['baseInfo']) and (order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
+    #             continue
+    #         else:
+    #             if mode != 0 and ('sellerRemarkIcon' not in order['baseInfo'] or order['baseInfo']['sellerRemarkIcon'] != str(mode)):
+    #                 continue
+    #
+    #             # if 'allDeliveredTime' in order['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
+    #             #     allDeliveredTime = int(order['baseInfo']['allDeliveredTime'][:-8])
+    #             #     if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > limitDeliveredTime['deleveredEndTime']:
+    #             #         continue
+    #
+    #             for productItem in order['productItems']:
+    #                 # 货号
+    #                 if 'cargoNumber' in productItem:
+    #                     cargoNumberTag = 'cargoNumber'
+    #                     cargoNumber = productItem['cargoNumber']
+    #                 else:
+    #                     cargoNumberTag = 'productCargoNumber'
+    #                     cargoNumber = productItem['productCargoNumber']
+    #                 if cargoNumber not in BeihuoJson:
+    #                     BeihuoJson[cargoNumber] = {}
+    #
+    #                 # 颜色
+    #                 color = productItem['skuInfos'][0]['value']
+    #                 if color not in BeihuoJson[productItem[cargoNumberTag]]:
+    #                     BeihuoJson[productItem[cargoNumberTag]][color] = {
+    #                         'products':{},
+    #                         'productImgUrl':productItem['productImgUrl'][1],
+    #                     }
+    #
+    #                 # 身高
+    #                 height = productItem['skuInfos'][1]['value']
+    #                 if height not in BeihuoJson[cargoNumber][color]['products']:
+    #                     BeihuoJson[cargoNumber][color]['products'][height] = {
+    #                         # 数量
+    #                         'quantity': productItem['quantity'],
+    #                     }
+    #                 else:
+    #                     # 数量
+    #                     BeihuoJson[cargoNumber][color]['products'][height]['quantity'] = BeihuoJson[cargoNumber][color]['products'][height]['quantity'] + productItem['quantity']
+    #
+    #                 # 单价
+    #                 BeihuoJson[cargoNumber][color]['products'][height]['price'] = GetCost(cargoNumber, height)
+    #
+    #                 # 总价
+    #                 BeihuoJson[cargoNumber][color]['products'][height]['cost'] = BeihuoJson[cargoNumber][color]['products'][height]['price']*BeihuoJson[cargoNumber][color]['products'][height]['quantity']
+    #     self.GetTable(BeihuoJson, isPrintOwn)
 
-        for order in orderList:
-            if ('sellerRemarkIcon' in order['baseInfo']) and (order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
+    def GetBeihuoJson(self, orders, is_print_own, mode=0, limit_delivered_time={}):
+        beihuo_json = {}
+
+        for order in orders:
+            if mode != 0 and (
+                    'sellerRemarkIcon' not in order['baseInfo'] or order['baseInfo']['sellerRemarkIcon'] != str(mode)):
                 continue
-            else:
-                if mode != 0 and ('sellerRemarkIcon' not in order['baseInfo'] or order['baseInfo']['sellerRemarkIcon'] != str(mode)):
-                    continue
+            if 'sellerRemarkIcon' in order['baseInfo'] and (
+                    order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
+                continue
 
-                # if 'allDeliveredTime' in order['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
-                #     allDeliveredTime = int(order['baseInfo']['allDeliveredTime'][:-8])
-                #     if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > limitDeliveredTime['deleveredEndTime']:
-                #         continue
+            for product_item in order['productItems']:
+                cargo_number_tag = 'cargoNumber' if 'cargoNumber' in product_item else 'productCargoNumber'
+                cargo_number = product_item[cargo_number_tag]
+                color = product_item['skuInfos'][0]['value']
+                height = product_item['skuInfos'][1]['value']
 
-                for productItem in order['productItems']:
-                    # 货号
-                    if 'cargoNumber' in productItem:
-                        cargoNumberTag = 'cargoNumber'
-                        cargoNumber = productItem['cargoNumber']
-                    else:
-                        cargoNumberTag = 'productCargoNumber'
-                        cargoNumber = productItem['productCargoNumber']
-                    if cargoNumber not in BeihuoJson:
-                        BeihuoJson[cargoNumber] = {}
+                product_dict = beihuo_json.setdefault(cargo_number, {}).setdefault(color, {'products': {},
+                                                                                           'productImgUrl':
+                                                                                               product_item[
+                                                                                                   'productImgUrl'][1]})
+                product_dict['products'].setdefault(height, {'quantity': 0})
+                product_dict['products'][height]['quantity'] += product_item['quantity']
+                product_dict['products'][height]['price'] = GetCost(cargo_number, height)
+                product_dict['products'][height]['cost'] = product_dict['products'][height]['price'] * \
+                                                           product_dict['products'][height]['quantity']
 
-                    # 颜色
-                    color = productItem['skuInfos'][0]['value']
-                    if color not in BeihuoJson[productItem[cargoNumberTag]]:
-                        BeihuoJson[productItem[cargoNumberTag]][color] = {
-                            'products':{},
-                            'productImgUrl':productItem['productImgUrl'][1],
-                        }
+        self.GetTable(beihuo_json, is_print_own)
 
-                    # 身高
-                    height = productItem['skuInfos'][1]['value']
-                    if height not in BeihuoJson[cargoNumber][color]['products']:
-                        BeihuoJson[cargoNumber][color]['products'][height] = {
-                            # 数量
-                            'quantity': productItem['quantity'],
-                        }
-                    else:
-                        # 数量
-                        BeihuoJson[cargoNumber][color]['products'][height]['quantity'] = BeihuoJson[cargoNumber][color]['products'][height]['quantity'] + productItem['quantity']
-
-                    # 单价
-                    BeihuoJson[cargoNumber][color]['products'][height]['price'] = GetCost(cargoNumber, height)
-
-                    # 总价
-                    BeihuoJson[cargoNumber][color]['products'][height]['cost'] = BeihuoJson[cargoNumber][color]['products'][height]['price']*BeihuoJson[cargoNumber][color]['products'][height]['quantity']
-        self.GetTable(BeihuoJson, isPrintOwn)
 
     def GetTable(self, BeihuoJson, isPrintOwn):
         # 制表
@@ -750,6 +780,8 @@ class Window:
     def CounterOutput(self, table):
         pass
 
+
+
 if __name__ == '__main__':
     # 高分辨率适配
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
@@ -759,3 +791,5 @@ if __name__ == '__main__':
     w.ui.show()
 
     app.exec_()
+
+    input("按下 Enter 键继续执行程序...")
