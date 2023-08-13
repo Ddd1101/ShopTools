@@ -35,9 +35,9 @@ dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, 'plugins', 'platforms')
 os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
 
-AppKey = {'联球制衣厂':'6679014','朝雄制衣厂':'1235061', '朝逸饰品厂':'7464845'}
-AppSecret =  {"联球制衣厂":b'5v8OE2TB7W8',"朝雄制衣厂":b'QbGaH9YxcqW',"朝逸饰品厂":b'Oo0hRGjaaPb'}
-access_token = {'联球制衣厂':'184b824f-cb76-4ad3-b857-7d806ef9cb19','朝雄制衣厂':'08126f65-2d55-4390-853a-3ab85b07f1d1', '朝逸饰品厂':'37454060-a51a-497d-9866-0d722a1bd5cc'}
+AppKey = {'联球制衣厂':'3527689','朝雄制衣厂':'1850682', '朝逸饰品厂':'7464845'}
+AppSecret =  {"联球制衣厂":b'Zw5KiCjSnL',"朝雄制衣厂":b'63K2QGMuZf4',"朝逸饰品厂":b'Oo0hRGjaaPb'}
+access_token = {'联球制衣厂':'999d182a-3576-4aee-97c5-8eeebce5e085','朝雄制衣厂':'4bcdd211-3b22-41ea-b0eb-8ef679e9b58f', '朝逸饰品厂':'37454060-a51a-497d-9866-0d722a1bd5cc'}
 en_code = ['s','S','m','M', 'l','L','x','X']
 
 base_url = 'https://gw.open.1688.com/openapi/'
@@ -274,7 +274,7 @@ class Window:
         super(Window, self).__init__()
 
         # 从文件中加载UI定义
-        qfile = QFile("Main.ui")
+        qfile = QFile("QtUi.ui")
         qfile.open(QFile.ReadOnly)
         qfile.close()
         self.ui = QUiLoader().load(qfile)
@@ -314,14 +314,14 @@ class Window:
         # self.ui.timeType.addItem("按付款时间")
         # self.ui.timeType.addItem("按下单时间")
 
-        ## 菜单
-        menuBar = self.ui.menuBar()
-        menuSetting = menuBar.addMenu("设置")
-        menuSettingKey = menuSetting.addAction("Key设置")
-
-
-
-        menuSettingKey.triggered.connect(self.OpenMenuSetting)
+        # ## 菜单
+        # menuBar = self.ui.menuBar()
+        # menuSetting = menuBar.addMenu("设置")
+        # menuSettingKey = menuSetting.addAction("Key设置")
+        #
+        #
+        #
+        # menuSettingKey.triggered.connect(self.OpenMenuSetting)
 
         # MenuA = MenuBar.addMenu("MenuA")
         # MenuA1 = MenuA.addMenu("A1")  # 菜单嵌套子菜单
