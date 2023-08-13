@@ -1,0 +1,9 @@
+shops:
+  - name: 联球制衣厂
+    AppKey: "3527689"
+    AppSecret: "Zw5KiCjSnL"
+    access_token: "999d182a-3576-4aee-97c5-8eeebce5e085"
+  - name: 朝雄制衣厂
+    AppKey: "1850682"
+    AppSecret: "63K2QGMuZf4"
+    access_token: "4bcdd211-3b22-41ea-b0eb-8ef679e9b58f"

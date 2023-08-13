@@ -1,25 +1,45 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 '''
-@Project ：ShopTools 
-@File    ：Settins.py
+@Project ：ShopTools
 @Author  ：Ddd
 @Date    ：2023/8/13 19:05 
 '''
 from PySide2.QtCore import QFile, Qt
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QDialog, QMessageBox
+import yaml
 
 
 class MenuSettingView(QDialog):
     def __init__(self):
         super(MenuSettingView, self).__init__()
 
-        # 从文件中加载UI定义
-        qfile = QFile("QtUi.ui")
-        qfile.open(QFile.ReadOnly)
-        qfile.close()
-        self.ui = QUiLoader().load(qfile)
+        # # 从文件中加载UI定义
+        # qfile = QFile("QtUi.ui")
+        # qfile.open(QFile.ReadOnly)
+        # qfile.close()
+        # self.ui = QUiLoader().load(qfile)
+
+        # 加载 YAML 文件
+        with open("config.yaml", "r", encoding="utf-8") as file:
+            config = yaml.safe_load(file)
+
+        layout = QVBoxLayout()
+
+        for shop in config['shops']:
+            label = QLabel(shop['name'], self)
+            line_edit = QLineEdit(self)
+
+            layout.addWidget(label)
+            layout.addWidget(line_edit)
+
+        self.setLayout(layout)
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
+
+        print(config['shops'])
+        print(len(config['shops']))
 
     def closeEvent(self, event):
         # 这是窗口关闭时调用的方法
@@ -38,7 +58,7 @@ class MenuSettingView(QDialog):
     #     super().__init__()
     #     layout = QVBoxLayout()
     #
-    #     self.label = QLabel("Enter setting:", self)
+    #     self.label = QLabel("", self)
     #     self.line_edit = QLineEdit(self)
     #     self.save_button = QPushButton("Save", self)
     #     self.save_button.clicked.connect(self.on_save)

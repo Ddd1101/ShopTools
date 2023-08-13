@@ -274,7 +274,7 @@ class Window:
         super(Window, self).__init__()
 
         # 从文件中加载UI定义
-        qfile = QFile("QtUi.ui")
+        qfile = QFile("Main.ui")
         qfile.open(QFile.ReadOnly)
         qfile.close()
         self.ui = QUiLoader().load(qfile)
@@ -314,14 +314,14 @@ class Window:
         # self.ui.timeType.addItem("按付款时间")
         # self.ui.timeType.addItem("按下单时间")
 
-        # ## 菜单
-        # menuBar = self.ui.menuBar()
-        # menuSetting = menuBar.addMenu("设置")
-        # menuSettingKey = menuSetting.addAction("Key设置")
-        #
-        #
-        #
-        # menuSettingKey.triggered.connect(self.OpenMenuSetting)
+        ## 菜单
+        menuBar = self.ui.menuBar()
+        menuSetting = menuBar.addMenu("设置")
+        menuSettingKey = menuSetting.addAction("Key设置")
+
+
+
+        menuSettingKey.triggered.connect(self.OpenMenuSetting)
 
         # MenuA = MenuBar.addMenu("MenuA")
         # MenuA1 = MenuA.addMenu("A1")  # 菜单嵌套子菜单
@@ -369,6 +369,7 @@ class Window:
 
     def OpenMenuSetting(self):
         childWindow = MenuSettingView()
+        childWindow.exec_()
 
     def CheckDelivery(self):
         self.CheckAllParams()
