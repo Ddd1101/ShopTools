@@ -817,5 +817,3 @@ if __name__ == '__main__':
     w.ui.show()
 
     app.exec_()
-
-    input("按下 Enter 键继续执行程序...")
