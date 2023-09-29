@@ -496,6 +496,7 @@ class Window:
         orderList = []
 
         for shopName in shopNameList:
+            orderListRaw.clear()
             for orderstatus in orderstatusList:
                 data = {'createStartTime': createStartTime, 'createEndTime': createEndTime, 'orderStatus': orderstatus,
                         'needMemoInfo': 'true'}
