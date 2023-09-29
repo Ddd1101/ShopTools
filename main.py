@@ -11,18 +11,12 @@ import xlsxwriter
 import io
 import urllib
 import time
-
 import requests
-
 import hmac
 import math
-
 import xlrd
-import xlwt
 import PySide2
-
 import _thread
-
 import Common.ImageHandler as ImageHandler
 
 # Views
@@ -38,8 +32,10 @@ os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
 AppKey = {'联球制衣厂':'3527689','朝雄制衣厂':'1850682', '朝逸饰品厂':'7464845'}
 AppSecret =  {"联球制衣厂":b'Zw5KiCjSnL',"朝雄制衣厂":b'63K2QGMuZf4',"朝逸饰品厂":b'Oo0hRGjaaPb'}
 access_token = {'联球制衣厂':'999d182a-3576-4aee-97c5-8eeebce5e085','朝雄制衣厂':'4bcdd211-3b22-41ea-b0eb-8ef679e9b58f', '朝逸饰品厂':'37454060-a51a-497d-9866-0d722a1bd5cc'}
-en_code = ['s','S','m','M', 'l','L','x','X']
 
+# /ShopBackData/Common/GlobleDate - EnglishCode
+en_code = ['s','S','m','M', 'l','L','x','X']
+# /ShopBackData/Common/GlobleDate - AlbbBaseUrl
 base_url = 'https://gw.open.1688.com/openapi/'
 
 
@@ -52,14 +48,15 @@ request_type = {
     'delivery':'param2/1/com.alibaba.logistics/'
 }
 
+# /Common/Utils/ExcelUtil - getSheet()
 def GetPriceGrid():
     workbook = xlrd.open_workbook(price_path)  # 打开工作簿
     sheets = workbook.sheet_names()  # 获取工作簿中的所有表格
     worksheet = workbook.sheet_by_name(sheets[0])  # 获取工作簿中所有表格中的的第一个表格
     return worksheet
-
 worksheet = GetPriceGrid()
 
+# /ShopBackData/Common/Utils/Utils - NumFormate4Print
 def NumFormate4Print(numStr):
     res = ""
     if numStr[0] in en_code:
@@ -83,6 +80,7 @@ def NumFormate4Print(numStr):
         res += "cm"
     return res
 
+# ShopBackData/Common/Utils/PriceUtils - CalSize
 def CalSize(sizeDescription):
     _size = 0
     for i in range(len(sizeDescription)):
@@ -92,6 +90,7 @@ def CalSize(sizeDescription):
             break
     return _size
 
+# ShopBackData/Common/Utils/PriceUtils
 def CalPriceLocationENCode(_size):
     if _size == "":
         return -1
@@ -116,6 +115,7 @@ def CalPriceLocationENCode(_size):
 
     return -1
 
+# ShopBackData/Common/Utils/PriceUtil/CalPriceLocation
 def CalPriceLocation(_size):
     if _size[0] in en_code:
         return CalPriceLocationENCode(_size)
@@ -144,7 +144,6 @@ def GetCost(cargoNumber,skuInfosValue, colNum=0):
         print(cargoNumber + " ： 未找到对应价格")
         _price = -1
     return float(_price)
-
 # 由货号得到产品名 - 厂家地址 - 厂家名
 def GetAdressAndShopName(cargoNumber):
     rowIndex = -1
@@ -158,10 +157,8 @@ def GetAdressAndShopName(cargoNumber):
     adress = worksheet.cell(rowIndex, 2).value
     shopName = worksheet.cell(rowIndex, 2).value
     return [productName,adress,shopName]
-
 def CalPageNum(totalRecord):
     return math.ceil(totalRecord/20)
-
 def CalculateSignature(urlPath,data, shopName):
     # 构造签名因子：urlPath
 
@@ -186,7 +183,6 @@ def CalculateSignature(urlPath,data, shopName):
     hex_res1 = hex_res1.upper()
 
     return hex_res1
-
 # 交易数据获取  默认1页
 def GetTradeData(data, shopName):
     data['access_token'] = access_token[shopName]
@@ -196,7 +192,6 @@ def GetTradeData(data, shopName):
     response = requests.post(url, data=data)
 
     return response.json()
-
 # 已发货物流信息
 def GetDeliveryData(data, shopName):
     data['access_token'] = access_token[shopName]
@@ -208,7 +203,6 @@ def GetDeliveryData(data, shopName):
     response = requests.post(url, data=data)
 
     return response.json()
-
 # 已发货物流信息+单号信息
 def GetDeliveryTraceData(data, shopName):
     data['access_token'] = access_token[shopName]
@@ -219,9 +213,6 @@ def GetDeliveryTraceData(data, shopName):
     response = requests.post(url, data=data)
 
     return response.json()
-
-
-
 def GetSingleTradeData(data, shopName):
     data['access_token'] = access_token[shopName]
     _aop_signature = CalculateSignature(request_type['trade'] + "alibaba.trade.get.sellerView/" + AppKey[shopName], data, shopName)
@@ -230,7 +221,6 @@ def GetSingleTradeData(data, shopName):
     response = requests.post(url, data=data)
 
     return response.json()
-
 # 获取订单号列表
 # 筛除刷单
 def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode = 0, limitDeliveredTime = {}):
@@ -268,7 +258,6 @@ def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode
             orderList += response['result']
 
     return orderList
-
 class Window:
     def __init__(self):
         super(Window, self).__init__()
@@ -293,6 +282,7 @@ class Window:
         self.ui.priceTablePath.setText("price.xlsx")
         self.ui.priceTablePathButton.clicked.connect(self.CheckPriceTablePath)
 
+        self.ui.shopName.addItem("联球制衣厂+朝雄制衣厂")
         self.ui.shopName.addItem("联球制衣厂")
         self.ui.shopName.addItem("朝雄制衣厂")
 
@@ -380,7 +370,6 @@ class Window:
             self.LogOut("\n # 启动计算 请稍后 \n")
         except:
             self.LogOut("Error: 无法计算启动线程")
-
     def DoCheckDelivery(self, createStartTime, createEndTime, orderstatusStr, shopName, mode=0, limitDeliveredTime={}):
         # 1. 获得待查询订单列表
         orderIdListRaw = GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode, limitDeliveredTime)
@@ -420,20 +409,14 @@ class Window:
         self.LogOut('# 超时订单检测完成 ')
 
         return deliveryErrorList
-
     def click_window2(self):
         QDesktopServices.openUrl(QUrl(self.errorUrl))
-
-
     def CheckPriceTablePath(self):
         filePath = QFileDialog.getOpenFileName(QMainWindow(), "选择文件")  # 选择目录，返回选中的路径
         self.ui.priceTablePath.setText(filePath[0])
-
-
     def CheckSaveFilePath(self):
         FileDirectory = QFileDialog.getExistingDirectory(QMainWindow(), "选择文件夹")  # 选择目录，返回选中的路径
         self.ui.saveFilePath.setText(FileDirectory)
-
     def CheckAllParams(self):
         self.LogOut("# 启动计算时间 : " + self.calStartTime.strftime('%Y-%m-%d %H:%M:%S'))
         self.shopId = self.ui.shopName.currentIndex() + 1
@@ -472,9 +455,6 @@ class Window:
             }
         else:
             self.limitDeliveredTime = {}
-
-
-
     def CalculateBeiHuoTable(self):
         self.CheckAllParams()
 
@@ -484,28 +464,127 @@ class Window:
 
         except:
             self.LogOut("Error: 无法计算启动线程")
-
-
     def LogOut(self, text):
         self.ui.output.append(text)
-
     def OrderList(self, shopName, mode, createStartTime, createEndTime, orderStatus, isPrintOwn, limitDeliveredTime):
         if mode == 5:
             orderId = int(self.ui.orderId.toPlainText())
-            self.GetSingleOrder(shopName, orderId, isPrintOwn)
+            self.order = self.GetSingleOrder(shopName, orderId, isPrintOwn)
         elif orderStatus == 0:
-            self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend,waitbuyerreceive', shopName, isPrintOwn, mode, limitDeliveredTime)
+            self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend,waitbuyerreceive', shopName,
+                              isPrintOwn, mode, limitDeliveredTime)
         elif orderStatus == 1:
-            self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend', shopName, isPrintOwn, mode, limitDeliveredTime)
+            self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend', shopName, isPrintOwn, mode,
+                              limitDeliveredTime)
         elif orderStatus == 2:
-            self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerreceive', shopName, isPrintOwn, mode, limitDeliveredTime)
+            self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerreceive', shopName, isPrintOwn, mode,
+                              limitDeliveredTime)
         elif orderStatus == 3:
-            self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerpay', shopName, isPrintOwn, mode, limitDeliveredTime)
+            self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerpay', shopName, isPrintOwn, mode,
+                              limitDeliveredTime)
+
 
         self.LogOut("# 统计完成 \n")
         self.LogOut("###############################################################")
+    def GetOrderBill(self, createStartTime, createEndTime, orderstatusStr, shopNameStr, isPrintOwn, mode = 0, limitDeliveredTime = {}):
+        shopNameList = shopNameStr.split('+')
 
-    def GetOrderBill(self, createStartTime, createEndTime, orderstatusStr, shopName, isPrintOwn, mode = 0, limitDeliveredTime = {}):
+        orderListRaw = []
+
+        orderstatusList = orderstatusStr.split(',')
+
+        orderList = []
+
+        for shopName in shopNameList:
+            for orderstatus in orderstatusList:
+                data = {'createStartTime': createStartTime, 'createEndTime': createEndTime, 'orderStatus': orderstatus,
+                        'needMemoInfo': 'true'}
+                response = GetTradeData(data, shopName)
+                if orderstatus == 'waitsellersend':
+                    orderstatusStr = '待发货'
+                if orderstatus == 'waitbuyerreceive':
+                    orderstatusStr = '已发货'
+
+                pageNum = CalPageNum(response['totalRecord'])
+
+                # 规格化数据
+                for pageId in range(pageNum):
+                    data = {'page': str(pageId + 1), 'createStartTime': createStartTime, 'createEndTime': createEndTime,
+                            'orderStatus': orderstatus, 'needMemoInfo': 'true'}
+                    response = GetTradeData(data, shopName)
+
+                    if orderstatus == 'waitsellersend' or orderstatus == 'waitbuyerreceive':
+                        for order in response['result']:
+                            if ('sellerRemarkIcon' in order['baseInfo']) and (
+                                    order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo'][
+                                'sellerRemarkIcon'] == '3'):
+                                continue
+                            elif mode != 0 and 'sellerRemarkIcon' not in order['baseInfo']:
+                                if mode == 1:
+                                    order['baseInfo']['sellerRemarkIcon'] = '1'
+                                elif mode == 4:
+                                    order['baseInfo']['sellerRemarkIcon'] = '4'
+
+                    orderListRaw += response['result']
+
+                if len(limitDeliveredTime) >= 2:
+                    for order in orderListRaw:
+                        if 'allDeliveredTime' in order['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
+                            allDeliveredTime = int(order['baseInfo']['allDeliveredTime'][:-8])
+                            if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > \
+                                    limitDeliveredTime['deleveredEndTime']:
+                                continue
+                            else:
+                                orderList.append(order)
+                else:
+                    orderList += orderListRaw
+
+        # for orderstatus in orderstatusList:
+        #     data = {'createStartTime': createStartTime, 'createEndTime': createEndTime, 'orderStatus': orderstatus,
+        #             'needMemoInfo': 'true'}
+        #     response = GetTradeData(data, shopName)
+        #     if orderstatus == 'waitsellersend' :
+        #         orderstatusStr = '待发货'
+        #     if orderstatus == 'waitbuyerreceive' :
+        #         orderstatusStr = '已发货'
+        #
+        #     pageNum = CalPageNum(response['totalRecord'])
+        #
+        #     # 规格化数据
+        #     for pageId in range(pageNum):
+        #         data = {'page': str(pageId + 1), 'createStartTime': createStartTime, 'createEndTime': createEndTime,
+        #                 'orderStatus': orderstatus, 'needMemoInfo': 'true'}
+        #         response = GetTradeData(data, shopName)
+        #
+        #         if orderstatus == 'waitsellersend' or orderstatus == 'waitbuyerreceive':
+        #             for order in response['result']:
+        #                 if ('sellerRemarkIcon' in order['baseInfo']) and ( order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
+        #                     continue
+        #                 elif mode != 0 and 'sellerRemarkIcon' not in order['baseInfo']:
+        #                     if mode == 1:
+        #                         order['baseInfo']['sellerRemarkIcon'] = '1'
+        #                     elif mode == 4:
+        #                         order['baseInfo']['sellerRemarkIcon'] = '4'
+        #
+        #         orderListRaw += response['result']
+        #
+        #
+        #     if len(limitDeliveredTime) >= 2:
+        #         for order in orderListRaw:
+        #             if 'allDeliveredTime' in order['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
+        #                 allDeliveredTime = int(order['baseInfo']['allDeliveredTime'][:-8])
+        #                 if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > limitDeliveredTime['deleveredEndTime']:
+        #                     continue
+        #                 else:
+        #                     orderList.append(order)
+        #     else:
+        #         orderList += orderListRaw
+
+        self.LogOut('# ' + orderstatusStr + ' : ' + str(len(orderList)) + '条记录')
+
+        self.GetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime)
+
+    def GetOrderBillBac(self, createStartTime, createEndTime, orderstatusStr, shopName, isPrintOwn, mode = 0, limitDeliveredTime = {}):
         orderListRaw = []
 
         orderstatusList = orderstatusStr.split(',')
@@ -565,58 +644,6 @@ class Window:
         orderList.append(tmp['result'])
         self.GetBeihuoJson(orderList, isPrintOwn, 0)
 
-    # def GetBeihuoJson(self, orderList, isPrintOwn, mode=0, limitDeliveredTime = {}):
-    #     BeihuoJson = {}
-    #
-    #     for order in orderList:
-    #         if ('sellerRemarkIcon' in order['baseInfo']) and (order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
-    #             continue
-    #         else:
-    #             if mode != 0 and ('sellerRemarkIcon' not in order['baseInfo'] or order['baseInfo']['sellerRemarkIcon'] != str(mode)):
-    #                 continue
-    #
-    #             # if 'allDeliveredTime' in order['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
-    #             #     allDeliveredTime = int(order['baseInfo']['allDeliveredTime'][:-8])
-    #             #     if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > limitDeliveredTime['deleveredEndTime']:
-    #             #         continue
-    #
-    #             for productItem in order['productItems']:
-    #                 # 货号
-    #                 if 'cargoNumber' in productItem:
-    #                     cargoNumberTag = 'cargoNumber'
-    #                     cargoNumber = productItem['cargoNumber']
-    #                 else:
-    #                     cargoNumberTag = 'productCargoNumber'
-    #                     cargoNumber = productItem['productCargoNumber']
-    #                 if cargoNumber not in BeihuoJson:
-    #                     BeihuoJson[cargoNumber] = {}
-    #
-    #                 # 颜色
-    #                 color = productItem['skuInfos'][0]['value']
-    #                 if color not in BeihuoJson[productItem[cargoNumberTag]]:
-    #                     BeihuoJson[productItem[cargoNumberTag]][color] = {
-    #                         'products':{},
-    #                         'productImgUrl':productItem['productImgUrl'][1],
-    #                     }
-    #
-    #                 # 身高
-    #                 height = productItem['skuInfos'][1]['value']
-    #                 if height not in BeihuoJson[cargoNumber][color]['products']:
-    #                     BeihuoJson[cargoNumber][color]['products'][height] = {
-    #                         # 数量
-    #                         'quantity': productItem['quantity'],
-    #                     }
-    #                 else:
-    #                     # 数量
-    #                     BeihuoJson[cargoNumber][color]['products'][height]['quantity'] = BeihuoJson[cargoNumber][color]['products'][height]['quantity'] + productItem['quantity']
-    #
-    #                 # 单价
-    #                 BeihuoJson[cargoNumber][color]['products'][height]['price'] = GetCost(cargoNumber, height)
-    #
-    #                 # 总价
-    #                 BeihuoJson[cargoNumber][color]['products'][height]['cost'] = BeihuoJson[cargoNumber][color]['products'][height]['price']*BeihuoJson[cargoNumber][color]['products'][height]['quantity']
-    #     self.GetTable(BeihuoJson, isPrintOwn)
-
     def GetBeihuoJson(self, orders, is_print_own, mode=0, limit_delivered_time={}):
         beihuo_json = {}
 
@@ -645,8 +672,6 @@ class Window:
                                                            product_dict['products'][height]['quantity']
 
         self.GetTable(beihuo_json, is_print_own)
-
-
     def GetTable(self, BeihuoJson, isPrintOwn):
         # 制表
         productsCountByShopName = {}
@@ -780,7 +805,6 @@ class Window:
 
         # BH_sheet.write(sumCountX, 1, shopNameTmp + ' 拿货总件数 ： ' + str(productsCountByShopName[shopNameTmp]))
         BH_wb.close()
-
     def RequestPic(self, url):
         flag = True
         while flag:
@@ -803,7 +827,6 @@ class Window:
             # picData = urllib.request.urlopen(url)
 
         return picData
-
     def CounterOutput(self, table):
         pass
 
