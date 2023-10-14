@@ -267,7 +267,7 @@ class Window:
 
         # 订单时间
         todayTmp = datetime.strptime(str(date.today()), '%Y-%m-%d')
-        startDateTimeTmp = todayTmp + timedelta(days = -5)
+        startDateTimeTmp = todayTmp + timedelta(days = -2)
         endDateTimeTmp   = todayTmp + timedelta(days = 1)
         self.ui.startTime.setDateTime(QDateTime(QDate(startDateTimeTmp.year, startDateTimeTmp.month, startDateTimeTmp.day), QTime(0, 0, 0)))
         self.ui.endTime.setDateTime(QDateTime(QDate(endDateTimeTmp.year, endDateTimeTmp.month, endDateTimeTmp.day), QTime(0, 0, 0)))
@@ -491,7 +491,7 @@ class Window:
 
 
         self.LogOut("# 统计完成 \n")
-        self.LogOut("###############################################################")
+        self.LogOut("#################################################")
     def GetOrderBill(self, createStartTime, createEndTime, orderstatusStr, shopNameStr, isPrintOwn, mode = 0, limitDeliveredTime = {}):
         shopNameList = shopNameStr.split('+')
 
@@ -754,16 +754,19 @@ class Window:
                 if _list == BeihuoTable[-1]:
                     sumCountX += 6
                 if shopNameTmp != '':
+                    piecesCount += productsCountByShopName[shopNameTmp][1]
                     self.LogOut(shopNameTmp + ' 拿货总件数 ： ' + str(productsCountByShopName[shopNameTmp][0]) + "  ||  总货款： " + str(round(productsCountByShopName[shopNameTmp][1],3)))
                     # 输出字体
                     priceStyle = BH_wb.add_format({
                         # "fg_color": "yellow",  # 单元格的背景颜色
                         "bold": 1,  # 字体加粗
-                        "align": "center",  # 对齐方式
+                        "align": "left",  # 对齐方式
                         "valign": "vcenter",  # 字体对齐方式
                         "font_color": "red"  # 字体颜色
                     })
-                    BH_sheet.write(sumCountX, 1, shopNameTmp + ' 拿货总件数 ： ' + str(productsCountByShopName[shopNameTmp][0]) + "  ||  总货款： " + str(round(productsCountByShopName[shopNameTmp][1],3)), priceStyle)
+                    writeStr = shopNameTmp + ' 拿货总件数 ： ' + str(productsCountByShopName[shopNameTmp][0]) + "  ||  总货款： " + str(round(productsCountByShopName[shopNameTmp][1],3))
+                    BH_sheet.merge_range('A' + str(sumCountX + 1) + ':D' + str(sumCountX + 1), writeStr, priceStyle)
+                    # BH_sheet.write(sumCountX, 1,, priceStyle)
                 shopNameTmp = _list[1]
 
             sumCountX = BH_x + 1
@@ -776,7 +779,18 @@ class Window:
 
             BH_y =  0
 
-        # BH_sheet.write(sumCountX, 1, shopNameTmp + ' 拿货总件数 ： ' + str(productsCountByShopName[shopNameTmp][0]) + "  ||  总货款： " + str(round(productsCountByShopName[shopNameTmp][1],3)), priceStyle)
+        piecesCountStyle = BH_wb.add_format({
+            # "fg_color": "yellow",  # 单元格的背景颜色
+            "bold": 1,  # 字体加粗
+            "align": "left",  # 对齐方式
+            "valign": "vcenter",  # 字体对齐方式
+            "font_color": "red"  # 字体颜色
+        })
+        sumCountX += 6
+        writeStr = '总货款 ： ' + str(round(piecesCount, 3))
+        BH_sheet.merge_range('A' + str(sumCountX) + ':D' + str(sumCountX), writeStr, piecesCountStyle)
+        # BH_sheet.write(sumCountX, 1, , piecesCountStyle)
+        self.LogOut(writeStr)
         BH_wb.close()
     def RequestPic(self, url):
         flag = True
