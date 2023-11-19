@@ -46,16 +46,41 @@ path = os.path.realpath(os.curdir)
 
 price_path = path + '/price.xlsx'
 
+factory_path = path + '/factory.xlsx'
+
 request_type = {
     'trade':"param2/1/com.alibaba.trade/",
     'delivery':'param2/1/com.alibaba.logistics/'
 }
+
+sumReporter = {}
+
 # /Common/Utils/ExcelUtil - getSheet()
 def GetPriceGrid():
     workbook = xlrd.open_workbook(price_path)  # 打开工作簿
     sheets = workbook.sheet_names()  # 获取工作簿中的所有表格
     worksheet = workbook.sheet_by_name(sheets[0])  # 获取工作簿中所有表格中的的第一个表格
     return worksheet
+
+def GetFactoryGrid():
+    workbook = xlrd.open_workbook(factory_path)  # 打开工作簿
+    sheets = workbook.sheet_names()  # 获取工作簿中的所有表格
+    worksheet = workbook.sheet_by_name(sheets[0])  # 获取工作簿中所有表格中的的第一个表格
+
+    for t in range(1, worksheet.nrows):
+        factoryName = worksheet.cell(t, 0).value
+        sumReporter[factoryName] = {}
+    return sumReporter
+
+def SplitChineseAndPinyin(shopNameRaw):
+    ret = -1
+
+    for i in range(len(shopNameRaw)):
+        if (shopNameRaw[i] >= 'a' and shopNameRaw[i] <= 'z') or (shopNameRaw[i] >= 'A' and shopNameRaw[i] <= 'Z'):
+            break
+        ret = i
+    return ret
+
 worksheet = GetPriceGrid()
 # /ShopBackData/Common/Utils/Utils - NumFormate4Print
 def NumFormate4Print(numStr):
@@ -690,7 +715,7 @@ class Window:
         sumCountX = 0
 
         piecesCount = 0 # 统计总价格
-        sumReporter = {}
+        sumReporter = GetFactoryGrid()
         for _list in BeihuoTable:
             if (not isPrintOwn) and (_list[1] == "朝新" or _list[2] == "朝新"):
                 continue
@@ -753,7 +778,6 @@ class Window:
             BH_sheet.insert_image(BH_x, BH_y, _list[4],
                                   {'image_data': imageData, 'x_offset': 3, 'x_scale': 0.14, 'y_scale': 0.14})
 
-
             if _list[1] != shopNameTmp or _list == BeihuoTable[-1]:
                 if _list == BeihuoTable[-1]:
                     sumCountX += 6
@@ -772,10 +796,12 @@ class Window:
                     BH_sheet.merge_range('A' + str(sumCountX + 1) + ':D' + str(sumCountX + 1), writeStr, priceStyle)
 
                     # 商家 & 货款  信息收集
-                    if shopNameTmp not in sumReporter:
-                        sumReporter[shopNameTmp] = {}
-                    sumReporter[shopNameTmp]["num"] = productsCountByShopName[shopNameTmp][0]
-                    sumReporter[shopNameTmp]["payment"] = round(productsCountByShopName[shopNameTmp][1], 3)
+                    shopNameSplited = shopNameTmp[0:SplitChineseAndPinyin(shopNameTmp)+1]
+
+                    if shopNameSplited not in sumReporter:
+                        sumReporter[shopNameSplited] = {}
+                    sumReporter[shopNameSplited]["num"] = productsCountByShopName[shopNameTmp][0]
+                    sumReporter[shopNameSplited]["payment"] = round(productsCountByShopName[shopNameTmp][1], 3)
 
                 shopNameTmp = _list[1]
 
@@ -789,13 +815,6 @@ class Window:
 
             BH_y =  0
 
-        piecesCountStyle = BH_wb.add_format({
-            # "fg_color": "yellow",  # 单元格的背景颜色
-            "bold": 1,  # 字体加粗
-            "align": "right",  # 对齐方式
-            "valign": "vcenter",  # 字体对齐方式
-            "font_color": "red"  # 字体颜色
-        })
         sumCountX += 6
 
 
@@ -824,14 +843,16 @@ class Window:
 
         sumCountX = 1
         for shopName in sumReporter:
-            BH_pay_sheet.write(sumCountX, 0, shopName, priceStyle)
-            BH_pay_sheet.write(sumCountX, 1, str(sumReporter[shopName]["num"]), priceStyle)
-            BH_pay_sheet.write(sumCountX, 2, str(round(sumReporter[shopName]["payment"], 3)), priceStyle)
+            if "num" in sumReporter[shopName]:
+                BH_pay_sheet.write(sumCountX, 0, shopName, priceStyle)
+                BH_pay_sheet.write(sumCountX, 1, str(sumReporter[shopName]["num"]), priceStyle)
+                BH_pay_sheet.write(sumCountX, 2, str(round(sumReporter[shopName]["payment"], 3)), priceStyle)
+                sumCountX += 1
 
             # writeStr = shopName + ' 总件数：' + str(sumReporter[shopName]["num"]) + " | 货款：" + str(
             #     round(sumReporter[shopName]["payment"], 3))
             # BH_pay_sheet.merge_range('B' + str(sumCountX + 1) + ':D' + str(sumCountX + 1), writeStr, priceStyle)
-            sumCountX += 1
+
 
         piecesCountStyle = BH_wb.add_format({
             # "fg_color": "yellow",  # 单元格的背景颜色
@@ -843,6 +864,7 @@ class Window:
 
         writeStr = '总货款 ： ' + str(round(piecesCount, 3))
         BH_pay_sheet.merge_range('A' + str(sumCountX) + ':C' + str(sumCountX), writeStr, piecesCountStyle)
+
 
 
     def RequestPic(self, url):
