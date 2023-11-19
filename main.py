@@ -797,14 +797,13 @@ class Window:
             "font_color": "red"  # 字体颜色
         })
         sumCountX += 6
-        writeStr = '总货款 ： ' + str(round(piecesCount, 3))
-        BH_sheet.merge_range('A' + str(sumCountX) + ':D' + str(sumCountX), writeStr, piecesCountStyle)
+
 
         # 输出统计信息
-        self.PrintSumReporter(BH_wb, BH_pay_sheet, sumReporter)
+        self.PrintSumReporter(BH_wb, BH_pay_sheet, sumReporter, piecesCount)
 
         BH_wb.close()
-    def PrintSumReporter(self, BH_wb, BH_pay_sheet, sumReporter):
+    def PrintSumReporter(self, BH_wb, BH_pay_sheet, sumReporter, piecesCount):
         header_style = BH_wb.add_format({
             # "fg_color": "yellow",  # 单元格的背景颜色
             "bold": 1,  # 字体加粗
@@ -833,6 +832,17 @@ class Window:
             #     round(sumReporter[shopName]["payment"], 3))
             # BH_pay_sheet.merge_range('B' + str(sumCountX + 1) + ':D' + str(sumCountX + 1), writeStr, priceStyle)
             sumCountX += 1
+
+        piecesCountStyle = BH_wb.add_format({
+            # "fg_color": "yellow",  # 单元格的背景颜色
+            "bold":1,
+            "align": "right",  # 对齐方式
+            "valign": "vcenter",  # 字体对齐方式
+            "font_color": "red"  # 字体颜色
+        })
+
+        writeStr = '总货款 ： ' + str(round(piecesCount, 3))
+        BH_pay_sheet.merge_range('A' + str(sumCountX) + ':C' + str(sumCountX), writeStr, piecesCountStyle)
 
 
     def RequestPic(self, url):
