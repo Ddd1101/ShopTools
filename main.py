@@ -681,6 +681,7 @@ class Window:
         # 保存备货单
         BH_wb = xlsxwriter.Workbook(savePath + '/' + self.calStartTime.strftime("%m_%d_%H_%M_%S") + ".xlsx")
         BH_sheet = BH_wb.add_worksheet('BH')
+        BH_pay_sheet = BH_wb.add_worksheet('pay')
         BH_x = 0
         BH_y = 0
 
@@ -689,6 +690,7 @@ class Window:
         sumCountX = 0
 
         piecesCount = 0 # 统计总价格
+        sumReporter = {}
         for _list in BeihuoTable:
             if (not isPrintOwn) and (_list[1] == "朝新" or _list[2] == "朝新"):
                 continue
@@ -718,8 +720,9 @@ class Window:
 
             # 插图
             imageName = _list[5].split('.jpg')[0].split('/')[-1]
-            time.sleep(1)
+
             if ImageHandler.IsImageExist(imageName) :
+                time.sleep(0.2)
                 # 本地存有图片，读出
                 imageData = ImageHandler.ReadImageFromDir(imageName)
 
@@ -727,6 +730,7 @@ class Window:
 
             else:
                 self.LogOut("下载图片")
+                time.sleep(1)
                 rt  = self.RequestPic(_list[5])
 
 
@@ -755,7 +759,7 @@ class Window:
                     sumCountX += 6
                 if shopNameTmp != '':
                     piecesCount += productsCountByShopName[shopNameTmp][1]
-                    self.LogOut(shopNameTmp + ' 拿货总件数 ： ' + str(productsCountByShopName[shopNameTmp][0]) + "  ||  总货款： " + str(round(productsCountByShopName[shopNameTmp][1],3)))
+                    # self.LogOut(shopNameTmp + ' 总件数：' + str(productsCountByShopName[shopNameTmp][0]) + " | 货款：" + str(round(productsCountByShopName[shopNameTmp][1],3)))
                     # 输出字体
                     priceStyle = BH_wb.add_format({
                         # "fg_color": "yellow",  # 单元格的背景颜色
@@ -764,9 +768,15 @@ class Window:
                         "valign": "vcenter",  # 字体对齐方式
                         "font_color": "red"  # 字体颜色
                     })
-                    writeStr = shopNameTmp + ' 拿货总件数 ： ' + str(productsCountByShopName[shopNameTmp][0]) + "  ||  总货款： " + str(round(productsCountByShopName[shopNameTmp][1],3))
+                    writeStr = shopNameTmp + ' 总件数：' + str(productsCountByShopName[shopNameTmp][0])
                     BH_sheet.merge_range('A' + str(sumCountX + 1) + ':D' + str(sumCountX + 1), writeStr, priceStyle)
-                    # BH_sheet.write(sumCountX, 1,, priceStyle)
+
+                    # 商家 & 货款  信息收集
+                    if shopNameTmp not in sumReporter:
+                        sumReporter[shopNameTmp] = {}
+                    sumReporter[shopNameTmp]["num"] = productsCountByShopName[shopNameTmp][0]
+                    sumReporter[shopNameTmp]["payment"] = round(productsCountByShopName[shopNameTmp][1], 3)
+
                 shopNameTmp = _list[1]
 
             sumCountX = BH_x + 1
@@ -782,16 +792,49 @@ class Window:
         piecesCountStyle = BH_wb.add_format({
             # "fg_color": "yellow",  # 单元格的背景颜色
             "bold": 1,  # 字体加粗
-            "align": "left",  # 对齐方式
+            "align": "right",  # 对齐方式
             "valign": "vcenter",  # 字体对齐方式
             "font_color": "red"  # 字体颜色
         })
         sumCountX += 6
         writeStr = '总货款 ： ' + str(round(piecesCount, 3))
         BH_sheet.merge_range('A' + str(sumCountX) + ':D' + str(sumCountX), writeStr, piecesCountStyle)
-        # BH_sheet.write(sumCountX, 1, , piecesCountStyle)
-        self.LogOut(writeStr)
+
+        # 输出统计信息
+        self.PrintSumReporter(BH_wb, BH_pay_sheet, sumReporter)
+
         BH_wb.close()
+    def PrintSumReporter(self, BH_wb, BH_pay_sheet, sumReporter):
+        header_style = BH_wb.add_format({
+            # "fg_color": "yellow",  # 单元格的背景颜色
+            "bold": 1,  # 字体加粗
+            "align": "right",  # 对齐方式
+            "valign": "vcenter",  # 字体对齐方式
+            "font_color": "black"  # 字体颜色
+        })
+        BH_pay_sheet.write(0, 0, "厂名", header_style)
+        BH_pay_sheet.write(0, 1, "发货件数", header_style)
+        BH_pay_sheet.write(0, 2, "总货款", header_style)
+
+        priceStyle = BH_wb.add_format({
+            # "fg_color": "yellow",  # 单元格的背景颜色
+            "align": "right",  # 对齐方式
+            "valign": "vcenter",  # 字体对齐方式
+            "font_color": "black"  # 字体颜色
+        })
+
+        sumCountX = 1
+        for shopName in sumReporter:
+            BH_pay_sheet.write(sumCountX, 0, shopName, priceStyle)
+            BH_pay_sheet.write(sumCountX, 1, str(sumReporter[shopName]["num"]), priceStyle)
+            BH_pay_sheet.write(sumCountX, 2, str(round(sumReporter[shopName]["payment"], 3)), priceStyle)
+
+            # writeStr = shopName + ' 总件数：' + str(sumReporter[shopName]["num"]) + " | 货款：" + str(
+            #     round(sumReporter[shopName]["payment"], 3))
+            # BH_pay_sheet.merge_range('B' + str(sumCountX + 1) + ':D' + str(sumCountX + 1), writeStr, priceStyle)
+            sumCountX += 1
+
+
     def RequestPic(self, url):
         flag = True
         while flag:
