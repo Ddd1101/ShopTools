@@ -376,6 +376,9 @@ class Window:
         self.deleveredEndTime = int(self.ui.deleveredEndTime.dateTime().toString('yyyyMMddHHmmss'))
 
         self.createEndTime = datetime(int(self.endYear), int(self.endMonth), int(self.endDay)).strftime('%Y%m%d') + '000000000+0800'
+        self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
+
+        self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
 
         self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
 
@@ -471,6 +474,7 @@ class Window:
         self.createEndTime = datetime(int(self.endYear), int(self.endMonth), int(self.endDay)).strftime('%Y%m%d') + '000000000+0800'
 
         self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
+        self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
 
         self.LogOut("# 店铺名 ：" + self.shopName)
         self.LogOut("# 色标 ：" + self.ui.Tag.currentText())
@@ -490,34 +494,34 @@ class Window:
         self.CheckAllParams()
 
         try:
-            _thread.start_new_thread(self.OrderList, (self.shopName, int(self.mode), self.createStartTime, self.createEndTime, self.orderStatus, self.isPrintOwn, self.limitDeliveredTime))
+            _thread.start_new_thread(self.OrderList, (self.shopName, int(self.mode), self.createStartTime, self.createEndTime, self.orderStatus, self.isPrintOwn, self.limitDeliveredTime, self.isPrintUnitPrice))
             self.LogOut("\n # 启动计算 请稍后 \n")
 
         except:
             self.LogOut("Error: 无法计算启动线程")
     def LogOut(self, text):
         self.ui.output.append(text)
-    def OrderList(self, shopName, mode, createStartTime, createEndTime, orderStatus, isPrintOwn, limitDeliveredTime):
+    def OrderList(self, shopName, mode, createStartTime, createEndTime, orderStatus, isPrintOwn, limitDeliveredTime, isPrintUnitPrice):
         if mode == 5:
             orderId = int(self.ui.orderId.toPlainText())
-            self.order = self.GetSingleOrder(shopName, orderId, isPrintOwn)
+            self.order = self.GetSingleOrder(shopName, orderId, isPrintOwn, isPrintUnitPrice)
         elif orderStatus == 0:
             self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend,waitbuyerreceive', shopName,
-                              isPrintOwn, mode, limitDeliveredTime)
+                              isPrintOwn, mode, limitDeliveredTime, isPrintUnitPrice)
         elif orderStatus == 1:
             self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend', shopName, isPrintOwn, mode,
-                              limitDeliveredTime)
+                              limitDeliveredTime, isPrintUnitPrice)
         elif orderStatus == 2:
             self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerreceive', shopName, isPrintOwn, mode,
-                              limitDeliveredTime)
+                              limitDeliveredTime, isPrintUnitPrice)
         elif orderStatus == 3:
             self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerpay', shopName, isPrintOwn, mode,
-                              limitDeliveredTime)
+                              limitDeliveredTime, isPrintUnitPrice)
 
 
         self.LogOut("# 统计完成 \n")
         self.LogOut("#################################################")
-    def GetOrderBill(self, createStartTime, createEndTime, orderstatusStr, shopNameStr, isPrintOwn, mode = 0, limitDeliveredTime = {}):
+    def GetOrderBill(self, createStartTime, createEndTime, orderstatusStr, shopNameStr, isPrintOwn, mode = 0, limitDeliveredTime = {}, isPrintUnitPrice = False):
         shopNameList = shopNameStr.split('+')
 
         orderListRaw = []
@@ -573,7 +577,7 @@ class Window:
 
         self.LogOut('# ' + orderstatusStr + ' : ' + str(len(orderList)) + '条记录')
 
-        self.GetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime)
+        self.GetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime, isPrintUnitPrice)
     def GetOrderBillBac(self, createStartTime, createEndTime, orderstatusStr, shopName, isPrintOwn, mode = 0, limitDeliveredTime = {}):
         orderListRaw = []
 
@@ -625,14 +629,14 @@ class Window:
         self.LogOut('# ' + orderstatusStr + ' : ' + str(len(orderList)) + '条记录')
 
         self.GetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime)
-    def GetSingleOrder(self, shopName, orderId, isPrintOwn):
+    def GetSingleOrder(self, shopName, orderId, isPrintOwn, isPrintUnitPrice = False):
         orderList = []
         data = {}
         data['orderId'] = orderId
         tmp = GetSingleTradeData(data, shopName)
         orderList.append(tmp['result'])
         self.GetBeihuoJson(orderList, isPrintOwn, 0)
-    def GetBeihuoJson(self, orders, is_print_own, mode=0, limit_delivered_time={}):
+    def GetBeihuoJson(self, orders, is_print_own, mode=0, limit_delivered_time={}, isPrintUnitPrice=False):
         beihuo_json = {}
 
         for order in orders:
@@ -659,8 +663,8 @@ class Window:
                 product_dict['products'][height]['cost'] = product_dict['products'][height]['price'] * \
                                                            product_dict['products'][height]['quantity']
 
-        self.GetTable(beihuo_json, is_print_own)
-    def GetTable(self, BeihuoJson, isPrintOwn):
+        self.GetTable(beihuo_json, is_print_own, isPrintUnitPrice)
+    def GetTable(self, BeihuoJson, isPrintOwn, isPrintUnitPrice):
         # 制表
         productsCountByShopName = {}
         BeihuoList = []
@@ -734,7 +738,10 @@ class Window:
             for height in _list[6]:
                 if amount != "":
                     amount += '\n'
-                amount = amount + NumFormate4Print(height[0]) + ' ' + str(height[1]) + '件'
+                if isPrintUnitPrice:
+                    amount = amount + NumFormate4Print(height[0]) + ' ' + str(height[1]) + '件' + ' ' + str(height[2])
+                else:
+                    amount = amount + NumFormate4Print(height[0]) + ' ' + str(height[1]) + '件'
 
             BH_sheet.write(BH_x, BH_y, amount)
             BH_y += 1
