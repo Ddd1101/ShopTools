@@ -155,7 +155,7 @@ def GetCost(cargoNumber,skuInfosValue, colNum=0):
             break
     if rowIndex == -1:
         print(cargoNumber + " ： 未找到对应货号" + worksheet.cell(t, colNum).value)
-        return -1
+        return 0
     colIndex = CalPriceLocation(skuInfosValue)
     if colIndex != None:
         _price = worksheet.cell(rowIndex, int(colIndex)).value
@@ -164,7 +164,7 @@ def GetCost(cargoNumber,skuInfosValue, colNum=0):
     if _price == '':
         print(rowIndex, colIndex)
         print(cargoNumber + " ： 未找到对应价格")
-        _price = -1
+        _price = 0
     return float(_price)
 # 由货号得到产品名 - 厂家地址 - 厂家名
 def GetAdressAndShopName(cargoNumber):
