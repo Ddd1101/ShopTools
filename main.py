@@ -734,6 +734,7 @@ class Window:
             BH_sheet.write(BH_x, BH_y, _list[4])
             BH_y += 1
 
+            # 多尺码序列化
             amount = ""
             for height in _list[6]:
                 if amount != "":
@@ -758,7 +759,7 @@ class Window:
                 # 本地存有图片，读出
                 imageData = ImageHandler.ReadImageFromDir(imageName)
 
-                self.LogOut("读取本地图片")
+                # self.LogOut("读取本地图片")
 
             else:
                 self.LogOut("下载图片")
@@ -790,7 +791,7 @@ class Window:
                     sumCountX += 6
                 if shopNameTmp != '':
                     piecesCount += productsCountByShopName[shopNameTmp][1]
-                    # self.LogOut(shopNameTmp + ' 总件数：' + str(productsCountByShopName[shopNameTmp][0]) + " | 货款：" + str(round(productsCountByShopName[shopNameTmp][1],3)))
+                    self.LogOut(shopNameTmp + ' 总件数：' + str(productsCountByShopName[shopNameTmp][0]) + " | 货款：" + str(round(productsCountByShopName[shopNameTmp][1],3)))
                     # 输出字体
                     priceStyle = BH_wb.add_format({
                         # "fg_color": "yellow",  # 单元格的背景颜色
