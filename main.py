@@ -26,21 +26,23 @@ import Common.ImageHandler as ImageHandler
 from View.MenuSettingView import *
 
 import platform
+
 os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
 dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, 'plugins', 'platforms')
 os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
 
-AppKey = {'联球制衣厂':'3527689','朝雄制衣厂':'4834884', '万盈饰品厂':'2888236'}
-AppSecret =  {"联球制衣厂":b'Zw5KiCjSnL',"朝雄制衣厂":b'JeV4khKJshr',"万盈饰品厂":b'Zy7QvG0bQJI'}
-access_token = {'联球制衣厂':'999d182a-3576-4aee-97c5-8eeebce5e085','朝雄制衣厂':'ef65f345-7060-4031-98ad-57d7d857f4d9', '万盈饰品厂':'f2f18480-0067-462f-9fac-952311ad4349'}
+AppKey = {'联球制衣厂': '3527689', '朝雄制衣厂': '4834884', '万盈饰品厂': '2888236'}
+AppSecret = {"联球制衣厂": b'Zw5KiCjSnL', "朝雄制衣厂": b'JeV4khKJshr', "万盈饰品厂": b'Zy7QvG0bQJI'}
+access_token = {'联球制衣厂': '999d182a-3576-4aee-97c5-8eeebce5e085',
+                '朝雄制衣厂': 'ef65f345-7060-4031-98ad-57d7d857f4d9',
+                '万盈饰品厂': 'f2f18480-0067-462f-9fac-952311ad4349'}
 
 # /ShopBackData/Common/GlobleDate - EnglishCode
-en_code = ['s','S','m','M', 'l','L','x','X']
+en_code = ['s', 'S', 'm', 'M', 'l', 'L', 'x', 'X']
 # /ShopBackData/Common/GlobleDate - AlbbBaseUrl
 base_url = 'https://gw.open.1688.com/openapi/'
-
 
 path = os.path.realpath(os.curdir)
 
@@ -49,15 +51,15 @@ price_path = path + '/price.xlsx'
 factory_path = path + '/factory.xlsx'
 
 request_type = {
-    'trade':"param2/1/com.alibaba.trade/",
-    'delivery':'param2/1/com.alibaba.logistics/'
+    'trade': "param2/1/com.alibaba.trade/",
+    'delivery': 'param2/1/com.alibaba.logistics/'
 }
 
 sumReporter = {}
 
 ## shop type
 SHOPTYPE_ALI_CHILD_CLOTH = 1
-SHOPTYPE_ALI_ACCESSOR    = 2
+SHOPTYPE_ALI_ACCESSOR = 2
 
 
 # /Common/Utils/ExcelUtil - getSheet()
@@ -66,6 +68,7 @@ def GetPriceGrid():
     sheets = workbook.sheet_names()  # 获取工作簿中的所有表格
     worksheet = workbook.sheet_by_name(sheets[0])  # 获取工作簿中所有表格中的的第一个表格
     return worksheet
+
 
 def GetFactoryGrid():
     workbook = xlrd.open_workbook(factory_path)  # 打开工作簿
@@ -77,6 +80,7 @@ def GetFactoryGrid():
         sumReporter[factoryName] = {}
     return sumReporter
 
+
 def SplitChineseAndPinyin(shopNameRaw):
     ret = -1
 
@@ -86,7 +90,10 @@ def SplitChineseAndPinyin(shopNameRaw):
         ret = i
     return ret
 
+
 worksheet = GetPriceGrid()
+
+
 # /ShopBackData/Common/Utils/Utils - NumFormate4Print
 def NumFormate4Print(numStr):
     res = ""
@@ -110,15 +117,19 @@ def NumFormate4Print(numStr):
                 break
         res += "cm"
     return res
+
+
 # ShopBackData/Common/Utils/PriceUtils - CalSize
 def CalSize(sizeDescription):
     _size = 0
     for i in range(len(sizeDescription)):
         if sizeDescription[i] >= '0' and sizeDescription[i] <= '9':
-            _size = _size*10 + int(sizeDescription[i])
+            _size = _size * 10 + int(sizeDescription[i])
         else:
             break
     return _size
+
+
 # ShopBackData/Common/Utils/PriceUtils
 def CalPriceLocationENCode(_size):
     if _size == "":
@@ -143,16 +154,20 @@ def CalPriceLocationENCode(_size):
                 return 29
 
     return -1
+
+
 # ShopBackData/Common/Utils/PriceUtil/CalPriceLocation
 def CalPriceLocation(_size):
     if _size[0] in en_code:
         return CalPriceLocationENCode(_size)
     # print(CalSize(_size))
-    theta = (CalSize(_size) - 90)/5
+    theta = (CalSize(_size) - 90) / 5
     _col = 5 + theta
     # print(_col)
     return _col
-def GetCost(cargoNumber,skuInfosValue, colNum=0):
+
+
+def GetCost(cargoNumber, skuInfosValue, colNum=0):
     rowIndex = -1
     for t in range(1, worksheet.nrows):
         if str(cargoNumber) == str(worksheet.cell(t, colNum).value):
@@ -171,6 +186,8 @@ def GetCost(cargoNumber,skuInfosValue, colNum=0):
         print(cargoNumber + " ： 未找到对应价格")
         _price = 0
     return float(_price)
+
+
 # 由货号得到产品名 - 厂家地址 - 厂家名
 def GetAdressAndShopName(cargoNumber):
     rowIndex = -1
@@ -179,25 +196,29 @@ def GetAdressAndShopName(cargoNumber):
             rowIndex = t
             break
     if rowIndex == -1:
-        return ["","",""]
+        return ["", "", ""]
     productName = worksheet.cell(rowIndex, 1).value
     adress = worksheet.cell(rowIndex, 2).value
     shopName = worksheet.cell(rowIndex, 2).value
-    return [productName,adress,shopName]
+    return [productName, adress, shopName]
+
+
 def CalPageNum(totalRecord):
-    return math.ceil(totalRecord/20)
+    return math.ceil(totalRecord / 20)
+
+
 def CalculateSignature(urlPath, data, shopName):
     # 构造签名因子：urlPath
 
     # 构造签名因子：拼装参数
     params = list()
     for key in data.keys():
-        params.append(key+str(data[key]))
+        params.append(key + str(data[key]))
     params.sort()
     sortedParams = params
     assembedParams = str()
     for param in sortedParams:
-        assembedParams = assembedParams+param
+        assembedParams = assembedParams + param
 
     # 合并签名因子
     mergedParams = urlPath + assembedParams
@@ -211,19 +232,24 @@ def CalculateSignature(urlPath, data, shopName):
 
     return hex_res1
 
+
 # 交易数据获取  默认1页
 def GetTradeData(data, shopName):
     data['access_token'] = access_token[shopName]
-    _aop_signature = CalculateSignature(request_type['trade'] + "alibaba.trade.getSellerOrderList/" + AppKey[shopName], data, shopName)
+    _aop_signature = CalculateSignature(request_type['trade'] + "alibaba.trade.getSellerOrderList/" + AppKey[shopName],
+                                        data, shopName)
     data['_aop_signature'] = _aop_signature
     url = base_url + request_type['trade'] + "alibaba.trade.getSellerOrderList/" + AppKey[shopName]
     response = requests.post(url, data=data)
 
     return response.json()
+
+
 # 已发货物流信息
 def GetDeliveryData(data, shopName):
     data['access_token'] = access_token[shopName]
-    _aop_signature = CalculateSignature(request_type['delivery'] + "alibaba.trade.getLogisticsInfos.sellerView/" + AppKey[shopName], data, shopName)
+    _aop_signature = CalculateSignature(
+        request_type['delivery'] + "alibaba.trade.getLogisticsInfos.sellerView/" + AppKey[shopName], data, shopName)
     data['_aop_signature'] = _aop_signature
 
     url = base_url + request_type['delivery'] + "alibaba.trade.getLogisticsInfos.sellerView/" + AppKey[shopName]
@@ -231,28 +257,37 @@ def GetDeliveryData(data, shopName):
     response = requests.post(url, data=data)
 
     return response.json()
+
+
 # 已发货物流信息+单号信息
 def GetDeliveryTraceData(data, shopName):
     data['access_token'] = access_token[shopName]
-    tmp = CalculateSignature('param2/1/com.alibaba.logistics/alibaba.trade.getLogisticsInfos.sellerView/' + AppKey[shopName], data, shopName)
-    _aop_signature = CalculateSignature(request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + AppKey[shopName], data, shopName)
+    tmp = CalculateSignature(
+        'param2/1/com.alibaba.logistics/alibaba.trade.getLogisticsInfos.sellerView/' + AppKey[shopName], data, shopName)
+    _aop_signature = CalculateSignature(
+        request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + AppKey[shopName], data, shopName)
     data['_aop_signature'] = _aop_signature
     url = base_url + request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + AppKey[shopName]
 
     response = requests.post(url, data=data)
 
     return response.json()
+
+
 def GetSingleTradeData(data, shopName):
     data['access_token'] = access_token[shopName]
-    _aop_signature = CalculateSignature(request_type['trade'] + "alibaba.trade.get.sellerView/" + AppKey[shopName], data, shopName)
+    _aop_signature = CalculateSignature(request_type['trade'] + "alibaba.trade.get.sellerView/" + AppKey[shopName],
+                                        data, shopName)
     data['_aop_signature'] = _aop_signature
     url = base_url + request_type['trade'] + "alibaba.trade.get.sellerView/" + AppKey[shopName]
     response = requests.post(url, data=data)
 
     return response.json()
+
+
 # 获取订单号列表
 # 筛除刷单
-def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode = 0, limitDeliveredTime = {}):
+def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode=0, limitDeliveredTime={}):
     orderList = []
 
     orderstatusList = orderstatusStr.split(',')
@@ -261,9 +296,9 @@ def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode
         data = {'createStartTime': createStartTime, 'createEndTime': createEndTime, 'orderStatus': orderstatus,
                 'needMemoInfo': 'true'}
         response = GetTradeData(data, shopName)
-        if orderstatus == 'waitsellersend' :
+        if orderstatus == 'waitsellersend':
             orderstatusStr = '待发货'
-        if orderstatus == 'waitbuyerreceive' :
+        if orderstatus == 'waitbuyerreceive':
             orderstatusStr = '已发货'
         # self.LogOut('# ' + orderstatusStr + ' : ' + str(response['totalRecord']) + '条记录')
         pageNum = CalPageNum(response['totalRecord'])
@@ -276,7 +311,9 @@ def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode
 
             if orderstatus == 'waitsellersend' or orderstatus == 'waitbuyerreceive':
                 for order in response['result']:
-                    if ('sellerRemarkIcon' in order['baseInfo']) and ( order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
+                    if ('sellerRemarkIcon' in order['baseInfo']) and (
+                            order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo'][
+                        'sellerRemarkIcon'] == '3'):
                         continue
                     elif mode != 0 and 'sellerRemarkIcon' not in order['baseInfo']:
                         if mode == 1:
@@ -287,6 +324,8 @@ def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode
             orderList += response['result']
 
     return orderList
+
+
 class Window:
     def __init__(self):
         super(Window, self).__init__()
@@ -312,7 +351,7 @@ class Window:
         # 订单时间
         todayTmp = datetime.strptime(str(date.today()), '%Y-%m-%d')
         startDateTimeTmp = todayTmp + timedelta(days=-1)
-        endDateTimeTmp   = todayTmp + timedelta(days=1)
+        endDateTimeTmp = todayTmp + timedelta(days=1)
         self.ui.startTime.setDateTime(
             QDateTime(QDate(startDateTimeTmp.year, startDateTimeTmp.month, startDateTimeTmp.day), QTime(0, 0, 0)))
         self.ui.endTime.setDateTime(
@@ -397,23 +436,29 @@ class Window:
         self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
 
         self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
+
     def OpenMenuSetting(self):
         childWindow = MenuSettingView()
         childWindow.exec_()
+
     # 异常物流检测
     def CheckDelivery(self):
         self.CheckAllParams()
 
         try:
-            _thread.start_new_thread(self.DoCheckDelivery, (self.createStartTime, self.createEndTime, 'waitbuyerreceive', self.shopName, self.mode, self.limitDeliveredTime))
+            _thread.start_new_thread(self.DoCheckDelivery, (
+            self.createStartTime, self.createEndTime, 'waitbuyerreceive', self.shopName, self.mode,
+            self.limitDeliveredTime))
 
             self.LogOut("\n # 启动计算 请稍后 \n")
         except:
             self.LogOut("Error: 无法计算启动线程")
+
     def DoCheckDelivery(self, createStartTime, createEndTime, orderstatusStr, shopName, mode=0, limitDeliveredTime={}):
         # 1. 获得待查询订单列表
         self.LogOut('1. 获得待查询订单列表')
-        orderIdListRaw = GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode, limitDeliveredTime)
+        orderIdListRaw = GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode,
+                                       limitDeliveredTime)
 
         orderIdList = []
 
@@ -445,8 +490,6 @@ class Window:
             self.LogOut('异常运单号：' + response['result'][0]['logisticsBillNo'])
             self.LogOut('-----------------------------------')
 
-
-
         # 4. 打印
         # self.LogOut('4. 打印')
         # for each in deliveryErrorList:
@@ -457,14 +500,18 @@ class Window:
         self.LogOut('# 超时订单检测完成 ')
 
         return deliveryErrorList
+
     def click_window2(self):
         QDesktopServices.openUrl(QUrl(self.errorUrl))
+
     def CheckPriceTablePath(self):
         filePath = QFileDialog.getOpenFileName(QMainWindow(), "选择文件")  # 选择目录，返回选中的路径
         self.ui.priceTablePath.setText(filePath[0])
+
     def CheckSaveFilePath(self):
         FileDirectory = QFileDialog.getExistingDirectory(QMainWindow(), "选择文件夹")  # 选择目录，返回选中的路径
         self.ui.saveFilePath.setText(FileDirectory)
+
     def CheckAllParams(self):
         self.LogOut("# 启动计算时间 : " + self.calStartTime.strftime('%Y-%m-%d %H:%M:%S'))
         self.shopId = self.ui.shopName.currentIndex() + 1
@@ -477,15 +524,17 @@ class Window:
         self.startMonth = self.ui.startTime.date().toString("MM")
         self.startDay = self.ui.startTime.date().toString("dd")
 
-        self.createStartTime = datetime(int(self.startYear), int(self.startMonth), int(self.startDay)).strftime('%Y%m%d') + '000000000+0800'
+        self.createStartTime = datetime(int(self.startYear), int(self.startMonth), int(self.startDay)).strftime(
+            '%Y%m%d') + '000000000+0800'
 
         self.endYear = self.ui.endTime.date().toString("yyyy")
         self.endMonth = self.ui.endTime.date().toString("MM")
         self.endDay = self.ui.endTime.date().toString("dd")
         self.deleveredStartTime = int(self.ui.deleveredStartTime.dateTime().toString('yyyyMMddHHmmss'))
-        self.deleveredEndTime   = int(self.ui.deleveredEndTime.dateTime().toString('yyyyMMddHHmmss'))
+        self.deleveredEndTime = int(self.ui.deleveredEndTime.dateTime().toString('yyyyMMddHHmmss'))
 
-        self.createEndTime = datetime(int(self.endYear), int(self.endMonth), int(self.endDay)).strftime('%Y%m%d') + '000000000+0800'
+        self.createEndTime = datetime(int(self.endYear), int(self.endMonth), int(self.endDay)).strftime(
+            '%Y%m%d') + '000000000+0800'
 
         self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
         self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
@@ -499,27 +548,33 @@ class Window:
 
         if self.isLimitDeleveredTime:
             self.limitDeliveredTime = {
-                'deleveredStartTime':self.deleveredStartTime,
-                'deleveredEndTime':self.deleveredEndTime
+                'deleveredStartTime': self.deleveredStartTime,
+                'deleveredEndTime': self.deleveredEndTime
             }
         else:
             self.limitDeliveredTime = {}
+
     def CalculateBeiHuoTable(self):
         self.CheckAllParams()
         try:
-            _thread.start_new_thread(self.OrderList, (self.shopName, int(self.mode), self.createStartTime, self.createEndTime, self.orderStatus, self.isPrintOwn, self.limitDeliveredTime, self.isPrintUnitPrice, SHOPTYPE_ALI_CHILD_CLOTH))
+            _thread.start_new_thread(self.OrderList, (
+            self.shopName, int(self.mode), self.createStartTime, self.createEndTime, self.orderStatus, self.isPrintOwn,
+            self.limitDeliveredTime, self.isPrintUnitPrice, SHOPTYPE_ALI_CHILD_CLOTH))
             self.LogOut("\n # 启动计算 请稍后 \n")
 
         except:
             self.LogOut("Error: 无法计算启动线程")
+
     def LogOut(self, text):
         self.ui.output.append(text)
-    def OrderList(self, shopName, mode, createStartTime, createEndTime, orderStatus, isPrintOwn, limitDeliveredTime, isPrintUnitPrice, shopType = SHOPTYPE_ALI_CHILD_CLOTH):
+
+    def OrderList(self, shopName, mode, createStartTime, createEndTime, orderStatus, isPrintOwn, limitDeliveredTime,
+                  isPrintUnitPrice, shopType=SHOPTYPE_ALI_CHILD_CLOTH):
         if mode == 5:
             orderId = int(self.ui.orderId.toPlainText())
             self.order = self.GetSingleOrder(shopName, orderId, isPrintOwn, isPrintUnitPrice)
         elif orderStatus == 0:
-            self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend,waitbuyerreceive', shopName,
+            self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend, waitbuyerreceive', shopName,
                               isPrintOwn, mode, limitDeliveredTime, isPrintUnitPrice, shopType)
         elif orderStatus == 1:
             self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend', shopName, isPrintOwn, mode,
@@ -531,10 +586,11 @@ class Window:
             self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerpay', shopName, isPrintOwn, mode,
                               limitDeliveredTime, isPrintUnitPrice)
 
-
         self.LogOut("# 统计完成 \n")
         self.LogOut("#################################################")
-    def GetOrderBill(self, createStartTime, createEndTime, orderstatusStr, shopNameStr, isPrintOwn, mode = 0, limitDeliveredTime = {}, isPrintUnitPrice = False, shopType = SHOPTYPE_ALI_CHILD_CLOTH):
+
+    def GetOrderBill(self, createStartTime, createEndTime, orderstatusStr, shopNameStr, isPrintOwn, mode=0,
+                     limitDeliveredTime={}, isPrintUnitPrice=False, shopType=SHOPTYPE_ALI_CHILD_CLOTH):
         shopNameList = shopNameStr.split('+')
 
         orderListRaw = []
@@ -588,6 +644,9 @@ class Window:
                 else:
                     orderList += orderListRaw
 
+                orderListRaw.clear()
+
+
         self.LogOut('# ' + orderstatusStr + ' : ' + str(len(orderList)) + '条记录')
 
         if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
@@ -595,7 +654,8 @@ class Window:
         elif shopType == SHOPTYPE_ALI_ACCESSOR:
             self.AliAccessorGetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime, isPrintUnitPrice)
 
-    def GetOrderBillBac(self, createStartTime, createEndTime, orderstatusStr, shopName, isPrintOwn, mode = 0, limitDeliveredTime = {}):
+    def GetOrderBillBac(self, createStartTime, createEndTime, orderstatusStr, shopName, isPrintOwn, mode=0,
+                        limitDeliveredTime={}):
         orderListRaw = []
 
         orderstatusList = orderstatusStr.split(',')
@@ -606,9 +666,9 @@ class Window:
             data = {'createStartTime': createStartTime, 'createEndTime': createEndTime, 'orderStatus': orderstatus,
                     'needMemoInfo': 'true'}
             response = GetTradeData(data, shopName)
-            if orderstatus == 'waitsellersend' :
+            if orderstatus == 'waitsellersend':
                 orderstatusStr = '待发货'
-            if orderstatus == 'waitbuyerreceive' :
+            if orderstatus == 'waitbuyerreceive':
                 orderstatusStr = '已发货'
 
             pageNum = CalPageNum(response['totalRecord'])
@@ -621,7 +681,9 @@ class Window:
 
                 if orderstatus == 'waitsellersend' or orderstatus == 'waitbuyerreceive':
                     for order in response['result']:
-                        if ('sellerRemarkIcon' in order['baseInfo']) and ( order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
+                        if ('sellerRemarkIcon' in order['baseInfo']) and (
+                                order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo'][
+                            'sellerRemarkIcon'] == '3'):
                             continue
                         elif mode != 0 and 'sellerRemarkIcon' not in order['baseInfo']:
                             if mode == 1:
@@ -631,12 +693,12 @@ class Window:
 
                 orderListRaw += response['result']
 
-
             if len(limitDeliveredTime) >= 2:
                 for order in orderListRaw:
                     if 'allDeliveredTime' in order['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
                         allDeliveredTime = int(order['baseInfo']['allDeliveredTime'][:-8])
-                        if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > limitDeliveredTime['deleveredEndTime']:
+                        if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > \
+                                limitDeliveredTime['deleveredEndTime']:
                             continue
                         else:
                             orderList.append(order)
@@ -646,13 +708,15 @@ class Window:
         self.LogOut('# ' + orderstatusStr + ' : ' + str(len(orderList)) + '条记录')
 
         self.GetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime)
-    def GetSingleOrder(self, shopName, orderId, isPrintOwn, isPrintUnitPrice = False):
+
+    def GetSingleOrder(self, shopName, orderId, isPrintOwn, isPrintUnitPrice=False):
         orderList = []
         data = {}
         data['orderId'] = orderId
         tmp = GetSingleTradeData(data, shopName)
         orderList.append(tmp['result'])
         self.GetBeihuoJson(orderList, isPrintOwn, 0)
+
     def GetBeihuoJson(self, orders, is_print_own, mode=0, limit_delivered_time={}, isPrintUnitPrice=False):
         beihuo_json = {}
 
@@ -681,6 +745,7 @@ class Window:
                                                            product_dict['products'][height]['quantity']
 
         self.GetTable(beihuo_json, is_print_own, isPrintUnitPrice)
+
     def GetTable(self, BeihuoJson, isPrintOwn, isPrintUnitPrice):
         # 制表
         productsCountByShopName = {}
@@ -693,21 +758,24 @@ class Window:
             BeihuoList.append(adressAndShopName[1])
             BeihuoList.append(adressAndShopName[0])
             if adressAndShopName[2] not in productsCountByShopName:
-                productsCountByShopName[adressAndShopName[2]] = [0,0]
+                productsCountByShopName[adressAndShopName[2]] = [0, 0]
             for color in BeihuoJson[item]:
                 BeihuoList.append(color)
                 BeihuoList.append(BeihuoJson[item][color]['productImgUrl'])
                 heightTable = []
-                heightList  = []
+                heightList = []
                 for height in BeihuoJson[item][color]['products']:
                     heightList.append(height)
                     heightList.append(BeihuoJson[item][color]['products'][height]['quantity'])
-                    productsCountByShopName[adressAndShopName[2]][0] += BeihuoJson[item][color]['products'][height]['quantity'] # 叠加总数
-                    productsCountByShopName[adressAndShopName[2]][1] += (BeihuoJson[item][color]['products'][height]['quantity'] * BeihuoJson[item][color]['products'][height]['price'])
+                    productsCountByShopName[adressAndShopName[2]][0] += BeihuoJson[item][color]['products'][height][
+                        'quantity']  # 叠加总数
+                    productsCountByShopName[adressAndShopName[2]][1] += (
+                                BeihuoJson[item][color]['products'][height]['quantity'] *
+                                BeihuoJson[item][color]['products'][height]['price'])
                     heightList.append(BeihuoJson[item][color]['products'][height]['price'])
                     heightTable.append(heightList.copy())
                     heightList.clear()
-                heightTable.sort(key=lambda x:x[0])
+                heightTable.sort(key=lambda x: x[0])
                 BeihuoList.append(heightTable)
                 BeihuoTable.append(BeihuoList.copy())
                 BeihuoList.pop()
@@ -719,7 +787,7 @@ class Window:
             BeihuoList.pop()
 
         # 排序 拿货地规整
-        BeihuoTable.sort(key=lambda x:[x[1],x[2]])
+        BeihuoTable.sort(key=lambda x: [x[1], x[2]])
 
         # 写表
         savePath = self.ui.saveFilePath.toPlainText().split('.')[0]
@@ -735,12 +803,12 @@ class Window:
 
         sumCountX = 0
 
-        piecesCount = 0 # 统计总价格
+        piecesCount = 0  # 统计总价格
         sumReporter = GetFactoryGrid()
         for _list in BeihuoTable:
             if (not isPrintOwn) and (_list[1] == "朝新" or _list[2] == "朝新"):
                 continue
-            BH_sheet.write(BH_x,BH_y, _list[0]) # 货号
+            BH_sheet.write(BH_x, BH_y, _list[0])  # 货号
             BH_y += 1
             BH_sheet.write(BH_x, BH_y, _list[1])
             BH_y += 1
@@ -771,7 +839,7 @@ class Window:
             # 插图
             imageName = _list[5].split('.jpg')[0].split('/')[-1]
 
-            if ImageHandler.IsImageExist(imageName) :
+            if ImageHandler.IsImageExist(imageName):
                 time.sleep(0.2)
                 # 本地存有图片，读出
                 imageData = ImageHandler.ReadImageFromDir(imageName)
@@ -781,8 +849,7 @@ class Window:
             else:
                 self.LogOut("下载图片")
                 time.sleep(1)
-                rt  = self.RequestPic(_list[5])
-
+                rt = self.RequestPic(_list[5])
 
                 if rt == 420:
                     # 本地存有图片，读出
@@ -791,7 +858,7 @@ class Window:
                     self.LogOut("读取到手动下载图片")
                 else:
 
-                    imageDataRaw =rt.read()
+                    imageDataRaw = rt.read()
 
                     imageData = io.BytesIO(imageDataRaw)
 
@@ -808,7 +875,9 @@ class Window:
                     sumCountX += 6
                 if shopNameTmp != '':
                     piecesCount += productsCountByShopName[shopNameTmp][1]
-                    self.LogOut(shopNameTmp + ' 总件数：' + str(productsCountByShopName[shopNameTmp][0]) + " | 货款：" + str(round(productsCountByShopName[shopNameTmp][1],3)))
+                    self.LogOut(
+                        shopNameTmp + ' 总件数：' + str(productsCountByShopName[shopNameTmp][0]) + " | 货款：" + str(
+                            round(productsCountByShopName[shopNameTmp][1], 3)))
                     # 输出字体
                     priceStyle = BH_wb.add_format({
                         # "fg_color": "yellow",  # 单元格的背景颜色
@@ -821,7 +890,7 @@ class Window:
                     BH_sheet.merge_range('A' + str(sumCountX + 1) + ':D' + str(sumCountX + 1), writeStr, priceStyle)
 
                     # 商家 & 货款  信息收集
-                    shopNameSplited = shopNameTmp[0:SplitChineseAndPinyin(shopNameTmp)+1]
+                    shopNameSplited = shopNameTmp[0:SplitChineseAndPinyin(shopNameTmp) + 1]
 
                     if shopNameSplited not in sumReporter:
                         sumReporter[shopNameSplited] = {}
@@ -838,15 +907,15 @@ class Window:
                 theta = 5 - len(_list[6])
                 BH_x = BH_x + theta + 2
 
-            BH_y =  0
+            BH_y = 0
 
         sumCountX += 6
-
 
         # 输出统计信息
         self.PrintSumReporter(BH_wb, BH_pay_sheet, sumReporter, piecesCount)
 
         BH_wb.close()
+
     def PrintSumReporter(self, BH_wb, BH_pay_sheet, sumReporter, piecesCount):
         header_style = BH_wb.add_format({
             # "fg_color": "yellow",  # 单元格的背景颜色
@@ -861,8 +930,8 @@ class Window:
 
         priceStyle = BH_wb.add_format({
             # "fg_color": "yellow",  # 单元格的背景颜色
-            "align": "right",  # 对齐方式
-            "valign": "vcenter",  # 字体对齐方式
+            "align"     : "right",  # 对齐方式
+            "valign"    : "vcenter",  # 字体对齐方式
             "font_color": "black"  # 字体颜色
         })
 
@@ -874,21 +943,17 @@ class Window:
                 BH_pay_sheet.write(sumCountX, 2, str(round(sumReporter[shopName]["payment"], 3)), priceStyle)
                 sumCountX += 1
 
-            # writeStr = shopName + ' 总件数：' + str(sumReporter[shopName]["num"]) + " | 货款：" + str(
-            #     round(sumReporter[shopName]["payment"], 3))
-            # BH_pay_sheet.merge_range('B' + str(sumCountX + 1) + ':D' + str(sumCountX + 1), writeStr, priceStyle)
-
-
         piecesCountStyle = BH_wb.add_format({
             # "fg_color": "yellow",  # 单元格的背景颜色
-            "bold":1,
-            "align": "right",  # 对齐方式
-            "valign": "vcenter",  # 字体对齐方式
-            "font_color": "red"  # 字体颜色
+            "bold": 1,
+            "align"     : "right",    # 对齐方式
+            "valign"    : "vcenter",  # 字体对齐方式
+            "font_color": "red"       # 字体颜色
         })
 
         writeStr = '总货款 ： ' + str(round(piecesCount, 3))
         BH_pay_sheet.merge_range('A' + str(sumCountX) + ':C' + str(sumCountX), writeStr, piecesCountStyle)
+
     def RequestPic(self, url):
         flag = True
         while flag:
@@ -912,7 +977,7 @@ class Window:
 
         return picData
 
-    # 饰品
+    # 饰品 AliAccessor
     def AliAccessorInit(self):
         # 订单时间
         todayTmp = datetime.strptime(str(date.today()), '%Y-%m-%d')
@@ -993,6 +1058,7 @@ class Window:
             '%Y%m%d') + '000000000+0800'
 
         self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
+
     def AliAccessorCheckAllParams(self):
         self.LogOut("# 启动计算时间 : " + self.calStartTime.strftime('%Y-%m-%d %H:%M:%S'))
         self.shopId = self.ui.AliAccessorShopName.currentIndex() + 1
@@ -1038,7 +1104,9 @@ class Window:
     def AliAccessorCalculateBeiHuoTable(self):
         self.AliAccessorCheckAllParams()
         try:
-            _thread.start_new_thread(self.OrderList, (self.shopName, int(self.mode), self.createStartTime, self.createEndTime, self.orderStatus, self.isPrintOwn, self.limitDeliveredTime, self.isPrintUnitPrice, SHOPTYPE_ALI_ACCESSOR))
+            _thread.start_new_thread(self.OrderList, (
+            self.shopName, int(self.mode), self.createStartTime, self.createEndTime, self.orderStatus, self.isPrintOwn,
+            self.limitDeliveredTime, self.isPrintUnitPrice, SHOPTYPE_ALI_ACCESSOR))
             self.LogOut("\n # 启动计算 请稍后 \n")
 
         except:
@@ -1059,20 +1127,87 @@ class Window:
                 cargo_number_tag = 'cargoNumber' if 'cargoNumber' in product_item else 'productCargoNumber'
                 cargo_number = product_item[cargo_number_tag]
                 color = product_item['skuInfos'][0]['value']
-                height = product_item['skuInfos'][1]['value']
 
-                product_dict = beihuo_json.setdefault(cargo_number, {}).setdefault(color, {'products': {},
-                                                                                           'productImgUrl':
-                                                                                               product_item[
-                                                                                                   'productImgUrl'][1]})
-                product_dict['products'].setdefault(height, {'quantity': 0})
-                product_dict['products'][height]['quantity'] += product_item['quantity']
-                product_dict['products'][height]['price'] = GetCost(cargo_number, height)
-                product_dict['products'][height]['cost'] = product_dict['products'][height]['price'] * \
-                                                           product_dict['products'][height]['quantity']
+                product_dict = beihuo_json.setdefault(cargo_number, {'color': color, 'quantity': 0,
+                                                                     'price': GetCost(cargo_number, color),
+                                                                     'productImgUrl': product_item['productImgUrl'][1]})
+                product_dict['quantity'] += product_item['quantity']
+                product_dict['cost'] = product_dict['price'] * product_dict['quantity']
 
-        self.GetTable(beihuo_json, is_print_own, isPrintUnitPrice)
+        self.AliAccessorGetTable(beihuo_json, is_print_own, isPrintUnitPrice)
 
+    def AliAccessorGetTable(self, BeihuoJson, isPrintOwn, isPrintUnitPrice):
+        # 制表
+        BeihuoList = []
+
+        for item in BeihuoJson:
+            BeihuoList.append(item)
+
+        # 写表
+        savePath = self.ui.saveFilePath.toPlainText().split('.')[0]
+
+        # 保存备货单
+        BH_wb = xlsxwriter.Workbook(savePath + '/' + self.calStartTime.strftime("%m_%d_%H_%M_%S") + "_饰品.xlsx")
+        BH_sheet = BH_wb.add_worksheet('BH')
+        BH_x = 0
+        BH_y = 0
+
+        sumCountX = 0
+
+        for cargoNumber in BeihuoJson:
+            BH_sheet.write(BH_x, BH_y, cargoNumber)  # 货号
+            BH_y += 1
+            BH_sheet.write(BH_x, BH_y, BeihuoJson[cargoNumber]['color']) # 品名
+            BH_y += 1
+            BH_sheet.write(BH_x, BH_y, BeihuoJson[cargoNumber]['quantity'])  # 数量
+            BH_y += 1
+            # BH_sheet.write(BH_x, BH_y, BeihuoJson[cargoNumber]['cost'])  # 总价
+            # BH_y += 1
+
+            # 插图
+            imgUrl = BeihuoJson[cargoNumber]['productImgUrl']
+            imageName = imgUrl.split('.jpg')[0].split('/')[-1]
+
+            if ImageHandler.IsImageExist(imageName):
+                time.sleep(0.2)
+                # 本地存有图片，读出
+                imageData = ImageHandler.ReadImageFromDir(imageName)
+
+                # self.LogOut("读取本地图片")
+
+            else:
+                self.LogOut("下载图片")
+                time.sleep(1)
+                rt = self.RequestPic(imgUrl)
+
+                if rt == 420:
+                    # 本地存有图片，读出
+                    imageData = ImageHandler.ReadImageFromDir(imageName)
+
+                    self.LogOut("读取到手动下载图片")
+                else:
+
+                    imageDataRaw = rt.read()
+
+                    imageData = io.BytesIO(imageDataRaw)
+
+                    # 保存图片
+                    ImageHandler.SaveImage(imageData.getvalue(), imageName)
+
+            BH_sheet.insert_image(BH_x, BH_y, imageName,
+                                  {'image_data': imageData, 'x_offset': 3, 'x_scale': 0.14, 'y_scale': 0.14})
+
+
+
+            sumCountX = BH_x + 1
+
+            BH_x += 6
+
+            BH_y = 0
+
+        sumCountX += 6
+
+        BH_wb.close()
 
 
 if __name__ == '__main__':
@@ -1080,7 +1215,7 @@ if __name__ == '__main__':
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
     app = QApplication([])
-    w = Window()
+    w   = Window()
     w.ui.show()
 
     app.exec_()
