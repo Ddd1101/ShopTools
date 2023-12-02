@@ -327,6 +327,17 @@ def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode
 
     return orderList
 
+class QTextBrowserHandler(logging.Handler):
+    def __init__(self, text_browser):
+        super().__init__()
+        self.text_browser = text_browser
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.text_browser.append(msg)
+        # 将滚动条设置到最底部
+        self.text_browser.verticalScrollBar().setValue(self.text_browser.verticalScrollBar().maximum() + 500)
+
 
 class Window:
     def __init__(self):
@@ -344,6 +355,19 @@ class Window:
         menuSettingKey = menuSetting.addAction("Key设置")
 
         menuSettingKey.triggered.connect(self.OpenMenuSetting)
+
+        # 创建 QTextBrowser 控件
+        self.costomLogging = self.ui.costomLogging
+        # 创建 QTextBrowserHandler
+        self.LoggingHandler = QTextBrowserHandler(self.costomLogging)
+
+        # 创建日志器并添加处理程序
+        self.logger = logging.getLogger()
+        self.logger.addHandler(self.LoggingHandler)
+        # 设置日志级别
+        self.logger.setLevel(logging.DEBUG)
+
+        self.costomLogging.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 
         self.AliChildClothInit()
 
@@ -585,7 +609,14 @@ class Window:
 
     def LogOut(self, text):
         # self.ui.output.append(text)
+        self.costomLogging.ensureCursorVisible()  # 游标可用
+        cursor = self.costomLogging.textCursor()  # 设置游标
+        pos = len(self.costomLogging.toPlainText())  # 获取文本尾部的位置
+        cursor.setPosition(pos)  # 游标位置设置为尾部
+        self.costomLogging.setTextCursor(cursor)  # 滚动到游标位置
         logging.info(text)
+
+
 
     def OrderList(self, shopName, mode, createStartTime, createEndTime, orderStatus, isPrintOwn, limitDeliveredTime,
                   isPrintUnitPrice, shopType=SHOPTYPE_ALI_CHILD_CLOTH):
