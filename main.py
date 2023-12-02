@@ -360,11 +360,12 @@ class Window:
             QDateTime(QDate(endDateTimeTmp.year, endDateTimeTmp.month, endDateTimeTmp.day), QTime(0, 0, 0)))
 
         # 发货时间
-        endDateTimeTmp = todayTmp + timedelta(days=1)
+        deliverStartDateTimeTmp = todayTmp + timedelta(days=0)
+        deliverEndDateTimeTmp   = todayTmp + timedelta(days=1)
         self.ui.deleveredStartTime.setDateTime(
-            QDateTime(QDate(startDateTimeTmp.year, startDateTimeTmp.month, startDateTimeTmp.day), QTime(0, 0, 0)))
+            QDateTime(QDate(deliverStartDateTimeTmp.year, deliverStartDateTimeTmp.month, deliverStartDateTimeTmp.day), QTime(0, 0, 0)))
         self.ui.deleveredEndTime.setDateTime(
-            QDateTime(QDate(endDateTimeTmp.year, endDateTimeTmp.month, endDateTimeTmp.day), QTime(0, 0, 0)))
+            QDateTime(QDate(deliverEndDateTimeTmp.year, deliverEndDateTimeTmp.month, deliverEndDateTimeTmp.day), QTime(0, 0, 0)))
 
         self.ui.priceTablePath.setText("price.xlsx")
         self.ui.priceTablePathButton.clicked.connect(self.CheckPriceTablePath)
