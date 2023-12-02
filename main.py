@@ -466,8 +466,7 @@ class Window:
         self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
 
         # 配置日志
-        formatted_time = self.calStartTime.strftime("%Y_%m_%d_%H_%M_%S")
-        logPath = logging_path + formatted_time + '.log'
+        logPath = logging_path + datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + '.log'
         logging.basicConfig(filename=logPath, level=logging.DEBUG,
                             format='%(asctime)s - %(levelname)s - %(message)s')
         logging.info("end AliChildClothInit")
@@ -851,7 +850,7 @@ class Window:
         savePath = self.ui.saveFilePath.toPlainText().split('.')[0]
 
         # 保存备货单
-        BH_wb = xlsxwriter.Workbook(savePath + '/' + self.calStartTime.strftime("%m_%d_%H_%M_%S") + ".xlsx")
+        BH_wb = xlsxwriter.Workbook(savePath + '/' + datetime.now().strftime("%m_%d_%H_%M_%S") + ".xlsx")
         BH_sheet = BH_wb.add_worksheet('BH')
         BH_pay_sheet = BH_wb.add_worksheet('pay')
         BH_x = 0
@@ -1130,7 +1129,7 @@ class Window:
         self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
 
         # 配置日志
-        logPath = logging_path + self.calStartTime.strftime("%m_%d_%H_%M_%S") + '.log'
+        logPath = logging_path + datetime.now().strftime("%m_%d_%H_%M_%S") + '.log'
         logging.basicConfig(filename=logPath, level=logging.DEBUG,
                             format='%(asctime)s - %(levelname)s - %(message)s')
 
