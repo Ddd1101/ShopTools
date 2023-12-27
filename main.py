@@ -624,15 +624,18 @@ class Window:
             orderId = int(self.ui.orderId.toPlainText())
             self.order = self.GetSingleOrder(shopName, orderId, isPrintOwn, isPrintUnitPrice)
         elif orderStatus == 0:
-            self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend, waitbuyerreceive', shopName,
+            self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerreceive', shopName,
                               isPrintOwn, mode, limitDeliveredTime, isPrintUnitPrice, shopType)
         elif orderStatus == 1:
+            self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend,waitbuyerreceive', shopName,
+                              isPrintOwn, mode, limitDeliveredTime, isPrintUnitPrice, shopType)
+        elif orderStatus == 2:
             self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend', shopName, isPrintOwn, mode,
                               limitDeliveredTime, isPrintUnitPrice, shopType)
-        elif orderStatus == 2:
+        elif orderStatus == 3:
             self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerreceive', shopName, isPrintOwn, mode,
                               limitDeliveredTime, isPrintUnitPrice)
-        elif orderStatus == 3:
+        elif orderStatus == 4:
             self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerpay', shopName, isPrintOwn, mode,
                               limitDeliveredTime, isPrintUnitPrice)
 
