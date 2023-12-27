@@ -1,8 +1,6 @@
 from PySide2 import QtCore
-from PySide2.QtWidgets import QApplication, QMainWindow, QPushButton, QPlainTextEdit, QMessageBox, QFileDialog, \
-    QRadioButton, QStatusBar
-from PySide2.QtUiTools import QUiLoader
-from PySide2.QtCore import QFile, QDate, QDateTime, QTime, QUrl, Slot
+from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PySide2.QtCore import QDate, QDateTime, QTime, QUrl
 from PySide2.QtGui import QDesktopServices
 
 import os
@@ -52,7 +50,7 @@ price_path = path + '/price.xlsx'
 
 factory_path = path + '/factory.xlsx'
 
-logging_path = path + '/Log/'
+logging_path = path + '\\Log\\'
 
 request_type = {
     'trade': "param2/1/com.alibaba.trade/",
@@ -64,6 +62,7 @@ sumReporter = {}
 ## shop type
 SHOPTYPE_ALI_CHILD_CLOTH = 1
 SHOPTYPE_ALI_ACCESSOR = 2
+
 
 # /Common/Utils/ExcelUtil - getSheet()
 def GetPriceGrid():
@@ -109,7 +108,6 @@ def NumFormate4Print(numStr):
         fomateSpaceNum = 5 - len(res)
         for k in range(fomateSpaceNum):
             res = " " + res
-
     else:
         for item in numStr:
             if item >= '0' and item <= '9':
@@ -302,7 +300,7 @@ def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode
             orderstatusStr = '待发货'
         if orderstatus == 'waitbuyerreceive':
             orderstatusStr = '已发货'
-        # self.LogOut('# ' + orderstatusStr + ' : ' + str(response['totalRecord']) + '条记录')
+        # self.Logout('# ' + orderstatusStr + ' : ' + str(response['totalRecord']) + '条记录')
         pageNum = CalPageNum(response['totalRecord'])
 
         # 规格化数据
@@ -327,16 +325,13 @@ def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode
 
     return orderList
 
-class QTextBrowserHandler(logging.Handler):
-    def __init__(self, text_browser):
-        super().__init__()
-        self.text_browser = text_browser
 
-    def emit(self, record):
-        msg = self.format(record)
-        self.text_browser.append(msg)
-        # 将滚动条设置到最底部
-        self.text_browser.verticalScrollBar().setValue(self.text_browser.verticalScrollBar().maximum() + 500)
+# def self.Logout(text, type='info'):
+#     if type == 'info':
+#         logging.debug(text)
+#     elif type == 'debug':
+#         logging.debug(text)
+    # pass
 
 
 class Window:
@@ -356,19 +351,6 @@ class Window:
 
         menuSettingKey.triggered.connect(self.OpenMenuSetting)
 
-        # 创建 QTextBrowser 控件
-        self.costomLogging = self.ui.costomLogging
-        # 创建 QTextBrowserHandler
-        self.LoggingHandler = QTextBrowserHandler(self.costomLogging)
-
-        # 创建日志器并添加处理程序
-        self.logger = logging.getLogger()
-        self.logger.addHandler(self.LoggingHandler)
-        # 设置日志级别
-        self.logger.setLevel(logging.DEBUG)
-
-        self.costomLogging.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-
         self.AliChildClothInit()
 
         self.AliAccessorInit()
@@ -385,11 +367,13 @@ class Window:
 
         # 发货时间
         deliverStartDateTimeTmp = todayTmp + timedelta(days=0)
-        deliverEndDateTimeTmp   = todayTmp + timedelta(days=1)
+        deliverEndDateTimeTmp = todayTmp + timedelta(days=1)
         self.ui.deleveredStartTime.setDateTime(
-            QDateTime(QDate(deliverStartDateTimeTmp.year, deliverStartDateTimeTmp.month, deliverStartDateTimeTmp.day), QTime(0, 0, 0)))
+            QDateTime(QDate(deliverStartDateTimeTmp.year, deliverStartDateTimeTmp.month, deliverStartDateTimeTmp.day),
+                      QTime(0, 0, 0)))
         self.ui.deleveredEndTime.setDateTime(
-            QDateTime(QDate(deliverEndDateTimeTmp.year, deliverEndDateTimeTmp.month, deliverEndDateTimeTmp.day), QTime(0, 0, 0)))
+            QDateTime(QDate(deliverEndDateTimeTmp.year, deliverEndDateTimeTmp.month, deliverEndDateTimeTmp.day),
+                      QTime(0, 0, 0)))
 
         self.ui.priceTablePath.setText("price.xlsx")
         self.ui.priceTablePathButton.clicked.connect(self.CheckPriceTablePath)
@@ -467,10 +451,9 @@ class Window:
 
         # 配置日志
         logPath = logging_path + datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + '.log'
-        logging.basicConfig(filename=logPath, level=logging.DEBUG,
+        logging.basicConfig(filename=logPath, level=logging.INFO,
                             format='%(asctime)s - %(levelname)s - %(message)s')
-        logging.info("end AliChildClothInit")
-
+        self.Logout("end AliChildClothInit", 'debug')
 
     def OpenMenuSetting(self):
         childWindow = MenuSettingView()
@@ -485,14 +468,14 @@ class Window:
                 self.createStartTime, self.createEndTime, 'waitbuyerreceive', self.shopName, self.mode,
                 self.limitDeliveredTime))
 
-            self.LogOut("\n # 启动计算 请稍后 \n")
+            self.Logout2("\n # 启动计算 请稍后 \n")
         except:
-            self.LogOut("Error: 无法计算启动线程")
+            self.Logout2("Error: 无法计算启动线程")
 
     def DoCheckDelivery(self, createStartTime, createEndTime, orderstatusStr, shopName, mode=0, limitDeliveredTime={}):
-        logging.info('start DoCheckDelivery')
+        self.Logout('start DoCheckDelivery', 'debug')
         # 1. 获得待查询订单列表
-        self.LogOut('1. 获得待查询订单列表')
+        self.Logout('1. 获得待查询订单列表')
         orderIdListRaw = GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode,
                                        limitDeliveredTime)
 
@@ -509,7 +492,7 @@ class Window:
             orderIdList.append(each['baseInfo']['idOfStr'])
 
         # 2. 查询物流跟踪信息
-        self.LogOut('2. 查询物流跟踪信息')
+        self.Logout('2. 查询物流跟踪信息')
         for orderId in orderIdList:
             data = {'orderId': int(orderId), 'webSite': '1688'}
             response = GetDeliveryTraceData(data, shopName)
@@ -517,24 +500,24 @@ class Window:
                 deliveryErrorList.append([orderId])
 
         # 3.获取物流运单号
-        self.LogOut('3.获取物流运单号')
+        self.Logout('3.获取物流运单号')
         for each in deliveryErrorList:
             data = {'orderId': int(each[0]), 'webSite': '1688'}
             response = GetDeliveryData(data, shopName)
             # each.append(response['result'][0]['logisticsBillNo'])
-            self.LogOut('异常订单号：' + each[0])
-            self.LogOut('异常运单号：' + response['result'][0]['logisticsBillNo'])
-            self.LogOut('-----------------------------------')
+            self.Logout('异常订单号：' + each[0])
+            self.Logout('异常运单号：' + response['result'][0]['logisticsBillNo'])
+            self.Logout('-----------------------------------')
 
         # 4. 打印
-        # self.LogOut('4. 打印')
+        # self.Logout('4. 打印')
         # for each in deliveryErrorList:
-        #     self.LogOut('异常订单号：' + each[0])
-        #     self.LogOut('异常运单号：' + each[1])
-        #     self.LogOut('===================================')
+        #     self.Logout('异常订单号：' + each[0])
+        #     self.Logout('异常运单号：' + each[1])
+        #     self.Logout('===================================')
 
-        self.LogOut('# 超时订单检测完成 ')
-        logging.info('end DoCheckDelivery')
+        self.Logout('# 超时订单检测完成 ')
+        self.Logout('end DoCheckDelivery', 'debug')
 
         return deliveryErrorList
 
@@ -550,8 +533,8 @@ class Window:
         self.ui.saveFilePath.setText(FileDirectory)
 
     def CheckAllParams(self):
-        logging.info('start CheckAllParams')
-        self.LogOut("# 启动计算时间 : " + self.calStartTime.strftime('%Y-%m-%d %H:%M:%S'))
+        self.Logout('start CheckAllParams', 'debug')
+        self.Logout("# 启动计算时间 : " + self.calStartTime.strftime('%Y-%m-%d %H:%M:%S'))
         self.shopId = self.ui.shopName.currentIndex() + 1
         self.shopName = self.ui.shopName.currentText()
         self.mode = self.ui.Tag.currentIndex()
@@ -577,10 +560,10 @@ class Window:
         self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
         self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
 
-        self.LogOut("# 店铺名 ：" + self.shopName)
-        self.LogOut("# 色标 ：" + self.ui.Tag.currentText())
-        self.LogOut("# 订单开始时间 ：" + self.ui.startTime.date().toString("yyyy-MM-dd"))
-        self.LogOut("# 订单截止时间 ：" + self.ui.endTime.date().toString("yyyy-MM-dd"))
+        self.Logout2("# 店铺名 ：" + self.shopName)
+        self.Logout2("# 色标 ：" + self.ui.Tag.currentText())
+        self.Logout2("# 订单开始时间 ：" + self.ui.startTime.date().toString("yyyy-MM-dd"))
+        self.Logout2("# 订单截止时间 ：" + self.ui.endTime.date().toString("yyyy-MM-dd"))
 
         self.isLimitDeleveredTime = self.ui.isLimitDeleveredTime.isChecked()
 
@@ -592,7 +575,7 @@ class Window:
         else:
             self.limitDeliveredTime = {}
 
-        logging.info('end CheckAllParams')
+        self.Logout('end CheckAllParams', 'debug')
 
     def CalculateBeiHuoTable(self):
         self.CheckAllParams()
@@ -601,25 +584,38 @@ class Window:
                 self.shopName, int(self.mode), self.createStartTime, self.createEndTime, self.orderStatus,
                 self.isPrintOwn,
                 self.limitDeliveredTime, self.isPrintUnitPrice, SHOPTYPE_ALI_CHILD_CLOTH))
-            self.LogOut("\n # 启动计算 请稍后 \n")
+            self.Logout("\n # 启动计算 请稍后 \n")
 
         except:
-            self.LogOut("Error: 无法计算启动线程")
+            self.Logout("Error: 无法计算启动线程")
 
-    def LogOut(self, text):
-        # self.ui.output.append(text)
-        self.costomLogging.ensureCursorVisible()  # 游标可用
-        cursor = self.costomLogging.textCursor()  # 设置游标
-        pos = len(self.costomLogging.toPlainText())  # 获取文本尾部的位置
-        cursor.setPosition(pos)  # 游标位置设置为尾部
-        self.costomLogging.setTextCursor(cursor)  # 滚动到游标位置
-        logging.info(text)
+    def Logout(self, text, type='info'):
+        # if type == 'info':
+        #     # logging.debug(text)
+        #     pass
+        # elif type == 'debug':
+        #     logging.debug(text)
 
+        # logging.debug(text)
 
+        # self.ui.costomLogging.append(text)
+        pass
+
+    def Logout2(self, text, type='info'):
+        # if type == 'info':
+        #     # logging.debug(text)
+        #     pass
+        # elif type == 'debug':
+        #     logging.debug(text)
+
+        # logging.debug(text)
+
+        self.ui.costomLogging.append(text)
+        # pass
 
     def OrderList(self, shopName, mode, createStartTime, createEndTime, orderStatus, isPrintOwn, limitDeliveredTime,
                   isPrintUnitPrice, shopType=SHOPTYPE_ALI_CHILD_CLOTH):
-        logging.info('start OrderList shopname' + shopName + ' mode:' + str(mode))
+        self.Logout2('start OrderList shopname' + shopName + ' mode:' + str(mode), 'debug')
         if mode == 5:
             orderId = int(self.ui.orderId.toPlainText())
             self.order = self.GetSingleOrder(shopName, orderId, isPrintOwn, isPrintUnitPrice)
@@ -639,13 +635,14 @@ class Window:
             self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerpay', shopName, isPrintOwn, mode,
                               limitDeliveredTime, isPrintUnitPrice)
 
-        self.ui.output.append("# 统计完成 \n")
-        self.LogOut("# 统计完成 \n")
-        self.LogOut("#################################################")
+        # self.ui.output.append("# 统计完成 \n")
+        self.Logout2("# 统计完成 \n")
+        self.Logout2("#################################################")
 
     def GetOrderBill(self, createStartTime, createEndTime, orderstatusStr, shopNameStr, isPrintOwn, mode=0,
                      limitDeliveredTime={}, isPrintUnitPrice=False, shopType=SHOPTYPE_ALI_CHILD_CLOTH):
-        logging.info('start GetOrderBill')
+        self.Logout('start GetOrderBill', 'debug')
+
         shopNameList = shopNameStr.split('+')
 
         orderListRaw = []
@@ -657,8 +654,10 @@ class Window:
         for shopName in shopNameList:
             orderListRaw.clear()
             for orderstatus in orderstatusList:
-                data = {'createStartTime': createStartTime, 'createEndTime': createEndTime, 'orderStatus': orderstatus,
+                data = {'createStartTime': createStartTime.strip(), 'createEndTime': createEndTime.strip(),
+                        'orderStatus': orderstatus.strip(),
                         'needMemoInfo': 'true'}
+
                 response = GetTradeData(data, shopName)
                 if orderstatus == 'waitsellersend':
                     orderstatusStr = '待发货'
@@ -701,13 +700,13 @@ class Window:
 
                 orderListRaw.clear()
 
-        self.LogOut('# ' + orderstatusStr + ' : ' + str(len(orderList)) + '条记录')
+        self.Logout2('# ' + orderstatusStr + ' : ' + str(len(orderList)) + '条记录')
 
         if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
             self.GetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime, isPrintUnitPrice)
         elif shopType == SHOPTYPE_ALI_ACCESSOR:
             self.AliAccessorGetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime, isPrintUnitPrice)
-        logging.info('end GetOrderBill')
+        self.Logout('end GetOrderBill', 'debug')
 
     def GetOrderBillBac(self, createStartTime, createEndTime, orderstatusStr, shopName, isPrintOwn, mode=0,
                         limitDeliveredTime={}):
@@ -760,7 +759,7 @@ class Window:
             else:
                 orderList = orderListRaw
 
-        self.LogOut('# ' + orderstatusStr + ' : ' + str(len(orderList)) + '条记录')
+        self.Logout2('# ' + orderstatusStr + ' : ' + str(len(orderList)) + '条记录')
 
         self.GetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime)
 
@@ -773,7 +772,7 @@ class Window:
         self.GetBeihuoJson(orderList, isPrintOwn, 0)
 
     def GetBeihuoJson(self, orders, is_print_own, mode=0, limit_delivered_time={}, isPrintUnitPrice=False):
-        logging.info('start GetBeihuoJson')
+        self.Logout('start GetBeihuoJson', 'debug')
         beihuo_json = {}
 
         for order in orders:
@@ -801,10 +800,10 @@ class Window:
                                                            product_dict['products'][height]['quantity']
 
         self.GetTable(beihuo_json, is_print_own, isPrintUnitPrice)
-        logging.info('end GetBeihuoJson')
+        self.Logout('end GetBeihuoJson', 'debug')
 
     def GetTable(self, BeihuoJson, isPrintOwn, isPrintUnitPrice):
-        logging.info('start GetTable')
+        self.Logout('start GetTable', 'debug')
         # 制表
         productsCountByShopName = {}
         BeihuoList = []
@@ -844,7 +843,7 @@ class Window:
             BeihuoList.pop()
             BeihuoList.pop()
 
-        logging.info('制表结束')
+        self.Logout('制表结束', 'info')
 
         # 排序 拿货地规整
         BeihuoTable.sort(key=lambda x: [x[1], x[2]])
@@ -902,49 +901,49 @@ class Window:
             if ImageHandler.IsImageExist(imageName):
                 time.sleep(0.2)
                 # 本地存有图片，读出
-                logging.info('before ReadImageFromDir' + imageName)
+                self.Logout('before ReadImageFromDir' + imageName, 'debug')
                 imageData = ImageHandler.ReadImageFromDir(imageName)
-                logging.info('after ReadImageFromDir' + imageName)
+                self.Logout('after ReadImageFromDir' + imageName, 'debug')
 
-                # self.LogOut("读取本地图片")
+                self.Logout("读取本地图片")
 
             else:
-                self.LogOut("下载图片")
-                time.sleep(5)
+                self.Logout("下载图片")
+                # time.sleep(3)
                 rt = self.RequestPic(_list[5])
 
                 if rt == 420:
                     # 本地存有图片，读出
-                    logging.info('before ReadImageFromDir' + imageName)
+                    self.Logout('before ReadImageFromDir' + imageName, 'debug')
                     imageData = ImageHandler.ReadImageFromDir(imageName)
-                    logging.info('after ReadImageFromDir' + imageName)
+                    self.Logout('after ReadImageFromDir' + imageName, 'debug')
 
-                    self.LogOut("读取到手动下载图片")
+                    self.Logout("读取到手动下载图片")
                 else:
-                    logging.info('before 1 ReadImageFromD net ' + imageName)
+                    self.Logout('before 1 ReadImageFromD net ' + imageName, 'debug')
                     imageDataRaw = rt.read()
-                    logging.info('2  ReadImageFromD net ' + imageName)
+                    self.Logout('2  ReadImageFromD net ' + imageName, 'debug')
 
                     imageData = io.BytesIO(imageDataRaw)
-                    logging.info('after ReadImageFromD net ' + imageName)
+                    self.Logout('after ReadImageFromD net ' + imageName, 'debug')
 
                     # BH_sheet.insert_image(BH_x, BH_y, _list[4],
                     #                       {'image_data': imageData, 'x_offset': 5, 'x_scale': 0.1, 'y_scale': 0.1})
                     # 保存图片
                     ImageHandler.SaveImage(imageData.getvalue(), imageName)
-                    logging.info('save ReadImageFromD net ' + imageName)
+                    self.Logout('save ReadImageFromD net ' + imageName)
 
-            logging.info('before insert_image')
+            self.Logout('before insert_image', 'debug')
             BH_sheet.insert_image(BH_x, BH_y, _list[4],
                                   {'image_data': imageData, 'x_offset': 3, 'x_scale': 0.14, 'y_scale': 0.14})
-            logging.info('after insert_image')
+            self.Logout('after insert_image', 'debug')
 
             if _list[1] != shopNameTmp or _list == BeihuoTable[-1]:
                 if _list == BeihuoTable[-1]:
                     sumCountX += 6
                 if shopNameTmp != '':
                     piecesCount += productsCountByShopName[shopNameTmp][1]
-                    self.LogOut(
+                    self.Logout2(
                         shopNameTmp + ' 总件数：' + str(productsCountByShopName[shopNameTmp][0]) + " | 货款：" + str(
                             round(productsCountByShopName[shopNameTmp][1], 3)))
                     # 输出字体
@@ -984,7 +983,7 @@ class Window:
         self.PrintSumReporter(BH_wb, BH_pay_sheet, sumReporter, piecesCount)
 
         BH_wb.close()
-        logging.info('end GetTable')
+        self.Logout('end GetTable', 'debug')
 
     def PrintSumReporter(self, BH_wb, BH_pay_sheet, sumReporter, piecesCount):
         header_style = BH_wb.add_format({
@@ -994,9 +993,10 @@ class Window:
             "valign": "vcenter",  # 字体对齐方式
             "font_color": "black"  # 字体颜色
         })
-        BH_pay_sheet.write(0, 0, "厂名", header_style)
-        BH_pay_sheet.write(0, 1, "发货件数", header_style)
-        BH_pay_sheet.write(0, 2, "总货款", header_style)
+        BH_pay_sheet.write(0, 0, "订单发货日期", header_style)
+        BH_pay_sheet.write(0, 1, "厂名", header_style)
+        BH_pay_sheet.write(0, 2, "发货件数", header_style)
+        BH_pay_sheet.write(0, 3, "总货款", header_style)
 
         priceStyle = BH_wb.add_format({
             # "fg_color": "yellow",  # 单元格的背景颜色
@@ -1008,9 +1008,10 @@ class Window:
         sumCountX = 1
         for shopName in sumReporter:
             if "num" in sumReporter[shopName]:
-                BH_pay_sheet.write(sumCountX, 0, shopName, priceStyle)
-                BH_pay_sheet.write(sumCountX, 1, str(sumReporter[shopName]["num"]), priceStyle)
-                BH_pay_sheet.write(sumCountX, 2, str(round(sumReporter[shopName]["payment"], 3)), priceStyle)
+                BH_pay_sheet.write(sumCountX, 0, self.deleveredStartTimeStr, priceStyle)
+                BH_pay_sheet.write(sumCountX, 1, shopName, priceStyle)
+                BH_pay_sheet.write(sumCountX, 2, str(sumReporter[shopName]["num"]), priceStyle)
+                BH_pay_sheet.write(sumCountX, 3, str(round(sumReporter[shopName]["payment"], 3)), priceStyle)
                 sumCountX += 1
 
         piecesCountStyle = BH_wb.add_format({
@@ -1022,39 +1023,40 @@ class Window:
         })
 
         writeStr = '总货款 ： ' + str(round(piecesCount, 3))
-        BH_pay_sheet.merge_range('A' + str(sumCountX) + ':C' + str(sumCountX), writeStr, piecesCountStyle)
+        BH_pay_sheet.merge_range('A' + str(sumCountX + 2) + ':C' + str(sumCountX + 2), writeStr, piecesCountStyle)
 
     def RequestPic(self, url):
-        logging.info('start RequestPic ' + url)
+        self.Logout('start RequestPic ' + url, 'debug')
         flag = True
         while flag:
             try:
                 if self.errorUrl != url:
-                    self.LogOut("<a href='" + url + "'>" + url + "</a>")
+                    self.Logout("<a href='" + url + "'>" + url + "</a>")
                 picData = urllib.request.urlopen(url)
                 flag = False
             except:
-                self.LogOut("# 获取图片异常 重试")
+                self.Logout2("# 获取图片异常 重试")
+                time.sleep(2)
                 if self.errorUrl != url:
                     self.errorUrl = url
-                QDesktopServices.openUrl(QUrl(self.errorUrl))
-                time.sleep(2)
+                    QDesktopServices.openUrl(QUrl(self.errorUrl))
 
                 imageName = url.split('.jpg')[0].split('/')[-1]
+                self.Logout("images/" + imageName + '.jpg')
                 if ImageHandler.IsImageExist(imageName):
                     return 420
 
             # picData = urllib.request.urlopen(url)
 
-        logging.info('end RequestPic ')
+        self.Logout('end RequestPic ', 'debug')
         return picData
 
     # 饰品 AliAccessor
     def AliAccessorInit(self):
         # 订单时间
         todayTmp = datetime.strptime(str(date.today()), '%Y-%m-%d')
-        startDateTimeTmp = todayTmp + timedelta(days=-3)
-        endDateTimeTmp = todayTmp + timedelta(days=2)
+        startDateTimeTmp = todayTmp + timedelta(days=-2)
+        endDateTimeTmp = todayTmp + timedelta(days=1)
         self.ui.AliAccessorStartTime.setDateTime(
             QDateTime(QDate(startDateTimeTmp.year, startDateTimeTmp.month, startDateTimeTmp.day), QTime(0, 0, 0)))
         self.ui.AliAccessorEndTime.setDateTime(
@@ -1062,9 +1064,9 @@ class Window:
 
         # 发货时间
         self.ui.AliAccessorDeleveredStartTime.setDateTime(
-            QDateTime(QDate(todayTmp.year, todayTmp.month, todayTmp.day - 1), QTime(0, 0, 0)))
+            QDateTime(QDate(todayTmp.year, todayTmp.month, todayTmp.day + 0), QTime(0, 0, 0)))
         self.ui.AliAccessorDeleveredEndTime.setDateTime(
-            QDateTime(QDate(todayTmp.year, todayTmp.month, todayTmp.day + 2), QTime(0, 0, 0)))
+            QDateTime(QDate(todayTmp.year, todayTmp.month, todayTmp.day + 1), QTime(0, 0, 0)))
 
         self.ui.AliAccessorPriceTablePath.setText("price.xlsx")
         self.ui.priceTablePathButton.clicked.connect(self.CheckPriceTablePath)
@@ -1126,6 +1128,8 @@ class Window:
         self.deleveredStartTime = int(self.ui.AliAccessorDeleveredStartTime.dateTime().toString('yyyyMMddHHmmss'))
         self.deleveredEndTime = int(self.ui.AliAccessorDeleveredEndTime.dateTime().toString('yyyyMMddHHmmss'))
 
+        self.deleveredStartTimeStr = self.ui.AliAccessorDeleveredStartTime.dateTime().toString('yyyy-MM-dd')
+
         self.createEndTime = datetime(int(self.endYear), int(self.endMonth), int(self.endDay)).strftime(
             '%Y%m%d') + '000000000+0800'
 
@@ -1135,11 +1139,12 @@ class Window:
         logPath = logging_path + datetime.now().strftime("%m_%d_%H_%M_%S") + '.log'
         logging.basicConfig(filename=logPath, level=logging.DEBUG,
                             format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.info('test')
 
-        logging.info('end AliAccessorInit')
+        self.Logout('end AliAccessorInit', 'debug')
 
     def AliAccessorCheckAllParams(self):
-        self.LogOut("# 启动计算时间 : " + self.calStartTime.strftime('%Y-%m-%d %H:%M:%S'))
+        self.Logout2("# 启动计算时间 : " + self.calStartTime.strftime('%Y-%m-%d %H:%M:%S'))
         self.shopId = self.ui.AliAccessorShopName.currentIndex() + 1
         self.shopName = self.ui.AliAccessorShopName.currentText()
         self.mode = self.ui.AliAccessorTag.currentIndex()
@@ -1165,10 +1170,10 @@ class Window:
         self.isPrintOwn = self.ui.AliAccessorIsPrintOwn.isChecked()
         self.isPrintUnitPrice = self.ui.AliAccessorIsPrintUnitPrice.isChecked()
 
-        self.LogOut("# 店铺名 ：" + self.shopName)
-        self.LogOut("# 色标 ：" + self.ui.AliAccessorTag.currentText())
-        self.LogOut("# 订单开始时间 ：" + self.ui.AliAccessorStartTime.date().toString("yyyy-MM-dd"))
-        self.LogOut("# 订单截止时间 ：" + self.ui.AliAccessorEndTime.date().toString("yyyy-MM-dd"))
+        self.Logout2("# 店铺名 ：" + self.shopName)
+        self.Logout2("# 色标 ：" + self.ui.AliAccessorTag.currentText())
+        self.Logout2("# 订单开始时间 ：" + self.ui.AliAccessorStartTime.date().toString("yyyy-MM-dd"))
+        self.Logout2("# 订单截止时间 ：" + self.ui.AliAccessorEndTime.date().toString("yyyy-MM-dd"))
 
         self.isLimitDeleveredTime = self.ui.AliAccessorIsLimitDeleveredTime.isChecked()
 
@@ -1181,20 +1186,20 @@ class Window:
             self.limitDeliveredTime = {}
 
     def AliAccessorCalculateBeiHuoTable(self):
-        logging.info('AliAccessorCalculateBeiHuoTable')
+        self.Logout('AliAccessorCalculateBeiHuoTable', 'debug')
         self.AliAccessorCheckAllParams()
         try:
             _thread.start_new_thread(self.OrderList, (
                 self.shopName, int(self.mode), self.createStartTime, self.createEndTime, self.orderStatus,
                 self.isPrintOwn,
                 self.limitDeliveredTime, self.isPrintUnitPrice, SHOPTYPE_ALI_ACCESSOR))
-            self.LogOut("\n # 启动计算 请稍后 \n")
+            self.Logout2("\n # 启动计算 请稍后 \n")
 
         except:
-            self.LogOut("Error: 无法计算启动线程")
+            self.Logout2("Error: 无法计算启动线程")
 
     def AliAccessorGetBeihuoJson(self, orders, is_print_own, mode=0, limit_delivered_time={}, isPrintUnitPrice=False):
-        logging.info('AliAccessorGetBeihuoJson')
+        self.Logout('AliAccessorGetBeihuoJson', 'debug')
         beihuo_json = {}
 
         for order in orders:
@@ -1204,7 +1209,6 @@ class Window:
             if 'sellerRemarkIcon' in order['baseInfo'] and (
                     order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
                 continue
-
             for product_item in order['productItems']:
                 cargo_number_tag = 'cargoNumber' if 'cargoNumber' in product_item else 'productCargoNumber'
                 cargo_number = product_item[cargo_number_tag]
@@ -1253,22 +1257,22 @@ class Window:
             if ImageHandler.IsImageExist(imageName):
                 time.sleep(0.2)
                 # 本地存有图片，读出
-                logging.info("before read img " + imageName)
+                self.Logout("before read img " + imageName, 'debug')
                 imageData = ImageHandler.ReadImageFromDir(imageName)
-                logging.info("after read img " + imageName)
+                self.Logout("after read img " + imageName, 'debug')
 
-                self.LogOut("读取本地图片")
+                self.Logout("读取本地图片")
 
             else:
-                self.LogOut("下载图片")
-                time.sleep(5)
+                self.Logout("下载图片")
+                time.sleep(3)
                 rt = self.RequestPic(imgUrl)
 
                 if rt == 420:
                     # 本地存有图片，读出
                     imageData = ImageHandler.ReadImageFromDir(imageName)
 
-                    self.LogOut("读取到手动下载图片")
+                    self.Logout("读取到手动下载图片")
                 else:
 
                     imageDataRaw = rt.read()
@@ -1278,10 +1282,10 @@ class Window:
                     # 保存图片
                     ImageHandler.SaveImage(imageData.getvalue(), imageName)
 
-            logging.info("before insert img " + imageName)
+            logging.debug("before insert img " + imageName)
             BH_sheet.insert_image(BH_x, BH_y, imageName,
                                   {'image_data': imageData, 'x_offset': 3, 'x_scale': 0.14, 'y_scale': 0.14})
-            logging.info("end insert img " + imageName)
+            logging.debug("end insert img " + imageName)
 
             sumCountX = BH_x + 1
 
