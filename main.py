@@ -475,7 +475,7 @@ class Window:
     def DoCheckDelivery(self, createStartTime, createEndTime, orderstatusStr, shopName, mode=0, limitDeliveredTime={}):
         self.Logout('start DoCheckDelivery', 'debug')
         # 1. 获得待查询订单列表
-        self.Logout('1. 获得待查询订单列表')
+        self.Logout2('1. 获得待查询订单列表')
         orderIdListRaw = GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode,
                                        limitDeliveredTime)
 
@@ -492,7 +492,7 @@ class Window:
             orderIdList.append(each['baseInfo']['idOfStr'])
 
         # 2. 查询物流跟踪信息
-        self.Logout('2. 查询物流跟踪信息')
+        self.Logout2('2. 查询物流跟踪信息')
         for orderId in orderIdList:
             data = {'orderId': int(orderId), 'webSite': '1688'}
             response = GetDeliveryTraceData(data, shopName)
@@ -500,14 +500,14 @@ class Window:
                 deliveryErrorList.append([orderId])
 
         # 3.获取物流运单号
-        self.Logout('3.获取物流运单号')
+        self.Logout2('3.获取物流运单号')
         for each in deliveryErrorList:
             data = {'orderId': int(each[0]), 'webSite': '1688'}
             response = GetDeliveryData(data, shopName)
             # each.append(response['result'][0]['logisticsBillNo'])
-            self.Logout('异常订单号：' + each[0])
-            self.Logout('异常运单号：' + response['result'][0]['logisticsBillNo'])
-            self.Logout('-----------------------------------')
+            self.Logout2('异常订单号：' + each[0])
+            self.Logout2('异常运单号：' + response['result'][0]['logisticsBillNo'])
+            self.Logout2('-----------------------------------')
 
         # 4. 打印
         # self.Logout('4. 打印')
@@ -516,7 +516,7 @@ class Window:
         #     self.Logout('异常运单号：' + each[1])
         #     self.Logout('===================================')
 
-        self.Logout('# 超时订单检测完成 ')
+        self.Logout2('# 超时订单检测完成 ')
         self.Logout('end DoCheckDelivery', 'debug')
 
         return deliveryErrorList
@@ -596,10 +596,7 @@ class Window:
         # elif type == 'debug':
         #     logging.debug(text)
 
-        # logging.debug(text)
-
-        # self.ui.costomLogging.append(text)
-        pass
+        logging.info(text)
 
     def Logout2(self, text, type='info'):
         # if type == 'info':
@@ -909,7 +906,7 @@ class Window:
 
             else:
                 self.Logout("下载图片")
-                # time.sleep(3)
+                time.sleep(0.5)
                 rt = self.RequestPic(_list[5])
 
                 if rt == 420:
@@ -1064,7 +1061,7 @@ class Window:
                 flag = False
             except:
                 self.Logout2("# 获取图片异常 重试")
-                time.sleep(2)
+                time.sleep(0.5)
                 if self.errorUrl != url:
                     self.errorUrl = url
                     QDesktopServices.openUrl(QUrl(self.errorUrl))
@@ -1293,7 +1290,7 @@ class Window:
 
             else:
                 self.Logout("下载图片")
-                time.sleep(3)
+                time.sleep(0.5)
                 rt = self.RequestPic(imgUrl)
 
                 if rt == 420:
