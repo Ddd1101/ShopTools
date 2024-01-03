@@ -938,9 +938,37 @@ class Window:
                                   {'image_data': imageData, 'x_offset': 3, 'x_scale': 0.14, 'y_scale': 0.14})
             self.Logout('after insert_image', 'debug')
 
-            if _list[1] != shopNameTmp or _list == BeihuoTable[-1]:
-                if _list == BeihuoTable[-1]:
-                    sumCountX += 6
+            # 只能处理到倒数第二个厂商
+            if _list[1] != shopNameTmp:
+                if shopNameTmp != '':
+                    piecesCount += productsCountByShopName[shopNameTmp][1]
+                    self.Logout2(
+                        shopNameTmp + ' 总件数：' + str(productsCountByShopName[shopNameTmp][0]) + " | 货款：" + str(
+                            round(productsCountByShopName[shopNameTmp][1], 3)))
+                    # 输出字体
+                    priceStyle = BH_wb.add_format({
+                        # "fg_color": "yellow",  # 单元格的背景颜色
+                        "bold": 1,  # 字体加粗
+                        "align": "left",  # 对齐方式
+                        "valign": "vcenter",  # 字体对齐方式
+                        "font_color": "red"  # 字体颜色
+                    })
+                    writeStr = shopNameTmp + ' 总件数：' + str(productsCountByShopName[shopNameTmp][0])
+                    BH_sheet.merge_range('A' + str(sumCountX + 1) + ':D' + str(sumCountX + 1), writeStr, priceStyle)
+
+                    # 商家 & 货款  信息收集
+                    shopNameSplited = shopNameTmp[0:SplitChineseAndPinyin(shopNameTmp) + 1]
+
+                    if shopNameSplited not in sumReporter:
+                        sumReporter[shopNameSplited] = {}
+                    sumReporter[shopNameSplited]["num"] = productsCountByShopName[shopNameTmp][0]
+                    sumReporter[shopNameSplited]["payment"] = round(productsCountByShopName[shopNameTmp][1], 3)
+
+                shopNameTmp = _list[1]
+
+            # 最后一个单独处理
+            if _list == BeihuoTable[-1]:
+                sumCountX += 6
                 if shopNameTmp != '':
                     piecesCount += productsCountByShopName[shopNameTmp][1]
                     self.Logout2(
