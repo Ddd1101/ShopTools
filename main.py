@@ -331,7 +331,7 @@ def GetOrderBill2(createStartTime, createEndTime, orderstatusStr, shopName, mode
 #         logging.debug(text)
 #     elif type == 'debug':
 #         logging.debug(text)
-    # pass
+# pass
 
 
 class Window:
@@ -394,6 +394,7 @@ class Window:
         self.ui.orderStatus.addItem("待发货 + 已发货")
         self.ui.orderStatus.addItem("待发货")
         self.ui.orderStatus.addItem("待付款")
+        self.ui.orderStatus.addItem("历史订单")
 
         self.ui.commit.clicked.connect(self.CalculateBeiHuoTable)
         # self.ui.openUrl.clicked.connect(self.click_window2)
@@ -606,7 +607,7 @@ class Window:
         #     logging.debug(text)
 
         # logging.debug(text)
-
+        print(text)
         self.ui.costomLogging.append(text)
         # pass
 
@@ -617,7 +618,7 @@ class Window:
             orderId = int(self.ui.orderId.toPlainText())
             self.order = self.GetSingleOrder(shopName, orderId, isPrintOwn, isPrintUnitPrice)
         elif orderStatus == 0:
-            self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerreceive', shopName,
+            self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerreceive, ', shopName,
                               isPrintOwn, mode, limitDeliveredTime, isPrintUnitPrice, shopType)
         elif orderStatus == 1:
             self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend,waitbuyerreceive', shopName,
@@ -626,11 +627,25 @@ class Window:
             self.GetOrderBill(createStartTime, createEndTime, 'waitsellersend', shopName, isPrintOwn, mode,
                               limitDeliveredTime, isPrintUnitPrice, shopType)
         elif orderStatus == 3:
-            self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerreceive', shopName, isPrintOwn, mode,
-                              limitDeliveredTime, isPrintUnitPrice)
-        elif orderStatus == 4:
             self.GetOrderBill(createStartTime, createEndTime, 'waitbuyerpay', shopName, isPrintOwn, mode,
-                              limitDeliveredTime, isPrintUnitPrice)
+                              limitDeliveredTime, isPrintUnitPrice, shopType)
+        # elif orderStatus == 4:
+        #     self.GetOrderHistory(createStartTime, createEndTime,
+        #                          'waitbuyerreceive,waitbuyersign,signinsuccess,confirm_goods,success', shopName,
+        #                          isPrintOwn, mode,
+        #                          limitDeliveredTime, isPrintUnitPrice, shopType)
+
+        elif orderStatus == 4:
+            self.GetOrderHistory(createStartTime, createEndTime,
+                                 'waitbuyerreceive,success', shopName,
+                                 isPrintOwn, mode,
+                                 limitDeliveredTime, isPrintUnitPrice, shopType)
+
+        # elif orderStatus == 4:
+        #     self.GetOrderHistory(createStartTime, createEndTime,
+        #                          '未枚举', shopName,
+        #                          isPrintOwn, mode,
+        #                          limitDeliveredTime, isPrintUnitPrice, shopType)
 
         # self.ui.output.append("# 统计完成 \n")
         self.Logout2("# 统计完成 \n")
@@ -698,6 +713,88 @@ class Window:
                 orderListRaw.clear()
 
         self.Logout2('# ' + orderstatusStr + ' : ' + str(len(orderList)) + '条记录')
+
+        if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
+            self.GetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime, isPrintUnitPrice)
+        elif shopType == SHOPTYPE_ALI_ACCESSOR:
+            self.AliAccessorGetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime, isPrintUnitPrice)
+        self.Logout('end GetOrderBill', 'debug')
+
+    def GetOrderHistory(self, createStartTime, createEndTime, statusStr, shopNameStr, isPrintOwn, mode=0,
+                        limitDeliveredTime={}, isPrintUnitPrice=False, shopType=SHOPTYPE_ALI_CHILD_CLOTH):
+        self.Logout('start GetOrderBill', 'debug')
+
+        shopNameList = shopNameStr.split('+')
+
+        orderListRaw = []
+
+        orderstatusList = statusStr.split(',')
+
+        orderList = []
+
+        statusList = statusStr.split(',')
+
+        for shopName in shopNameList:
+            orderListRaw.clear()
+            for orderstatus in orderstatusList:
+                data = {'createStartTime': createStartTime.strip(), 'createEndTime': createEndTime.strip(),
+                        'needMemoInfo': 'true'}
+
+                response = GetTradeData(data, shopName)
+
+                pageNum = CalPageNum(response['totalRecord'])
+
+                # 规格化数据
+                for pageId in range(pageNum):
+                    print(orderstatus, pageNum, pageId)
+                    data = {'page': str(pageId + 1), 'createStartTime': createStartTime, 'createEndTime': createEndTime,
+                            'orderStatus': orderstatus, 'needMemoInfo': 'true'}
+                    response = GetTradeData(data, shopName)
+
+                    print("response 2")
+
+                    while 'result' not in response:
+                        time.sleep(2)
+                        print("while 'result' not in response:")
+                        response = GetTradeData(data, shopName)
+                        data['page'] = str(pageId - 1)
+                        response = GetTradeData(data, shopName)
+                        data['page'] = str(pageId + 1)
+                        response = GetTradeData(data, shopName)
+
+
+                    for order in response['result']:
+                        if ('sellerRemarkIcon' in order['baseInfo']) and (
+                                order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo'][
+                            'sellerRemarkIcon'] == '3'):
+                            continue
+                        elif order['baseInfo']['status'] not in statusList:
+                            continue
+                        elif mode != 0 and 'sellerRemarkIcon' not in order['baseInfo']:
+                            if mode == 1:
+                                order['baseInfo']['sellerRemarkIcon'] = '1'
+                            elif mode == 4:
+                                order['baseInfo']['sellerRemarkIcon'] = '4'
+
+                        orderListRaw.append(order)
+
+
+
+                if len(limitDeliveredTime) >= 2:
+                    for order in orderListRaw:
+                        if 'allDeliveredTime' in order['baseInfo'] and len(limitDeliveredTime) > 0:  # 根据发货时间判断是否要输出
+                            allDeliveredTime = int(order['baseInfo']['allDeliveredTime'][:-8])
+                            if allDeliveredTime < limitDeliveredTime['deleveredStartTime'] or allDeliveredTime > \
+                                    limitDeliveredTime['deleveredEndTime']:
+                                continue
+                            else:
+                                orderList.append(order)
+                else:
+                    orderList += orderListRaw
+
+                orderListRaw.clear()
+
+        self.Logout2('# ' + statusStr + ' : ' + str(len(orderList)) + '条记录')
 
         if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
             self.GetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime, isPrintUnitPrice)
@@ -785,6 +882,8 @@ class Window:
                 cargo_number = product_item[cargo_number_tag]
                 color = product_item['skuInfos'][0]['value']
                 height = product_item['skuInfos'][1]['value']
+
+                cargo_number = cargo_number.split('【')[-1]
 
                 product_dict = beihuo_json.setdefault(cargo_number, {}).setdefault(color, {'products': {},
                                                                                            'productImgUrl':
@@ -906,7 +1005,7 @@ class Window:
 
             else:
                 self.Logout("下载图片")
-                time.sleep(0.5)
+                # time.sleep(0.5)
                 rt = self.RequestPic(_list[5])
 
                 if rt == 420:
@@ -1061,7 +1160,7 @@ class Window:
                 flag = False
             except:
                 self.Logout2("# 获取图片异常 重试")
-                time.sleep(0.5)
+                time.sleep(0.1)
                 if self.errorUrl != url:
                     self.errorUrl = url
                     QDesktopServices.openUrl(QUrl(self.errorUrl))
@@ -1109,6 +1208,7 @@ class Window:
         self.ui.AliAccessorOrderStatus.addItem("待发货 + 已发货")
         self.ui.AliAccessorOrderStatus.addItem("待发货")
         self.ui.AliAccessorOrderStatus.addItem("待付款")
+        self.ui.AliAccessorOrderStatus.addItem("历史订单")
 
         self.ui.AliAccessorCommit.clicked.connect(self.AliAccessorCalculateBeiHuoTable)
 
@@ -1233,6 +1333,7 @@ class Window:
                 continue
             if 'sellerRemarkIcon' in order['baseInfo'] and (
                     order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
+                print("刷单")
                 continue
             for product_item in order['productItems']:
                 cargo_number_tag = 'cargoNumber' if 'cargoNumber' in product_item else 'productCargoNumber'
@@ -1290,7 +1391,7 @@ class Window:
 
             else:
                 self.Logout("下载图片")
-                time.sleep(0.5)
+                # time.sleep(0.5)
                 rt = self.RequestPic(imgUrl)
 
                 if rt == 420:
