@@ -240,7 +240,11 @@ def GetTradeData(data, shopName):
                                         data, shopName)
     data['_aop_signature'] = _aop_signature
     url = base_url + request_type['trade'] + "alibaba.trade.getSellerOrderList/" + AppKey[shopName]
-    response = requests.post(url, data=data)
+    try:
+        time.sleep(0.2)
+        response = requests.post(url, data=data)
+    except Exception as e:
+        print("post error ", e)
 
     return response.json()
 
@@ -598,6 +602,8 @@ class Window:
         #     logging.debug(text)
 
         logging.info(text)
+        # print(text)
+        # self.ui.costomLogging.append(text)
 
     def Logout2(self, text, type='info'):
         # if type == 'info':
@@ -607,7 +613,7 @@ class Window:
         #     logging.debug(text)
 
         # logging.debug(text)
-        print(text)
+        # print(text)
         self.ui.costomLogging.append(text)
         # pass
 
@@ -1015,6 +1021,8 @@ class Window:
                     self.Logout('after ReadImageFromDir' + imageName, 'debug')
 
                     self.Logout("读取到手动下载图片")
+                elif rt == 400:
+                    imageData = ImageHandler.ReadImageFromDir(imageName)
                 else:
                     self.Logout('before 1 ReadImageFromD net ' + imageName, 'debug')
                     imageDataRaw = rt.read()
@@ -1106,7 +1114,11 @@ class Window:
         # 输出统计信息
         self.PrintSumReporter(BH_wb, BH_pay_sheet, sumReporter, piecesCount)
 
-        BH_wb.close()
+        try:
+            BH_wb.close()
+        except Exception as e:
+            print('程序出现异常:', e)
+
         self.Logout('end GetTable', 'debug')
 
     def PrintSumReporter(self, BH_wb, BH_pay_sheet, sumReporter, piecesCount):
@@ -1153,22 +1165,48 @@ class Window:
         self.Logout('start RequestPic ' + url, 'debug')
         flag = True
         while flag:
+            # 图片下载尝试 2
+            time.sleep(0.3)
+            print("# 图片下载方法1")
+            self.Logout2("# 图片下载方法1")
             try:
+                response = requests.get(url)
+                if response.status_code == 200:
+                    imageName = url.split('.jpg')[0].split('/')[-1]
+                    with open("images/" + imageName + '.jpg', 'wb') as f:
+                        f.write(response.content)
+                    self.Logout2("# 图片下载方法1 成功")
+
+                    return 400
+                else:
+                    print('无法下载图片1:', response.status_code)
+            except:
+                print('无法下载图片1 - 1')
+                
+
+            # 图片下载尝试 1
+            try:
+                self.Logout2("# 图片下载方法2")
                 if self.errorUrl != url:
                     self.Logout("<a href='" + url + "'>" + url + "</a>")
                 picData = urllib.request.urlopen(url)
-                flag = False
+                return picData
             except:
-                self.Logout2("# 获取图片异常 重试")
+                self.Logout2("# 获取图片异常2 重试")
                 time.sleep(0.1)
-                if self.errorUrl != url:
-                    self.errorUrl = url
-                    QDesktopServices.openUrl(QUrl(self.errorUrl))
+            
 
                 imageName = url.split('.jpg')[0].split('/')[-1]
                 self.Logout("images/" + imageName + '.jpg')
                 if ImageHandler.IsImageExist(imageName):
                     return 420
+
+            
+            if self.errorUrl != url:
+                    self.errorUrl = url
+                    QDesktopServices.openUrl(QUrl(self.errorUrl))
+            
+
 
             # picData = urllib.request.urlopen(url)
 
@@ -1399,6 +1437,8 @@ class Window:
                     imageData = ImageHandler.ReadImageFromDir(imageName)
 
                     self.Logout("读取到手动下载图片")
+                elif rt == 400:
+                    imageData = ImageHandler.ReadImageFromDir(imageName)
                 else:
 
                     imageDataRaw = rt.read()
