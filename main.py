@@ -954,7 +954,7 @@ class Window:
         savePath = self.ui.saveFilePath.toPlainText().split('.')[0]
 
         # 保存备货单
-        BH_wb = xlsxwriter.Workbook(savePath + '/' + datetime.now().strftime("%m_%d_%H_%M_%S") + ".xlsx")
+        BH_wb = xlsxwriter.Workbook(savePath + '/' + datetime.now().strftime("%m月%d日%H时%M分%S秒") + ".xlsx")
         BH_sheet = BH_wb.add_worksheet('BH')
         BH_pay_sheet = BH_wb.add_worksheet('pay')
         BH_x = 0
