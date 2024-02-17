@@ -1,3 +1,5 @@
+import locale
+
 from PySide2 import QtCore
 from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PySide2.QtCore import QDate, QDateTime, QTime, QUrl
@@ -28,6 +30,8 @@ from View.MenuSettingView import *
 import platform
 
 os.environ['QT_MAC_WANTS_LAYER'] = '1'
+
+locale.setlocale(locale.LC_CTYPE, 'Chinese')
 
 dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, 'plugins', 'platforms')
