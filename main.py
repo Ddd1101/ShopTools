@@ -17,6 +17,7 @@ import math
 import xlrd
 import PySide2
 import _thread
+import json
 
 import logging
 
@@ -37,11 +38,11 @@ dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, 'plugins', 'platforms')
 os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
 
-AppKey = {'联球制衣厂': '3527689', '朝雄制衣厂': '4834884', '万盈饰品厂': '2888236'}
-AppSecret = {"联球制衣厂": b'Zw5KiCjSnL', "朝雄制衣厂": b'JeV4khKJshr', "万盈饰品厂": b'Zy7QvG0bQJI'}
-access_token = {'联球制衣厂': '999d182a-3576-4aee-97c5-8eeebce5e085',
-                '朝雄制衣厂': 'ef65f345-7060-4031-98ad-57d7d857f4d9',
-                '万盈饰品厂': 'f2f18480-0067-462f-9fac-952311ad4349'}
+# AppKey = {'联球制衣厂': '3527689', '朝雄制衣厂': '4834884', '万盈饰品厂': '2888236'}
+# AppSecret = {"联球制衣厂": b'Zw5KiCjSnL', "朝雄制衣厂": b'JeV4khKJshr', "万盈饰品厂": b'Zy7QvG0bQJI'}
+# access_token = {'联球制衣厂': '999d182a-3576-4aee-97c5-8eeebce5e085',
+#                 '朝雄制衣厂': 'ef65f345-7060-4031-98ad-57d7d857f4d9',
+#                 '万盈饰品厂': 'f2f18480-0067-462f-9fac-952311ad4349'}
 
 # /ShopBackData/Common/GlobleDate - EnglishCode
 en_code = ['s', 'S', 'm', 'M', 'l', 'L', 'x', 'X']
@@ -66,6 +67,11 @@ sumReporter = {}
 ## shop type
 SHOPTYPE_ALI_CHILD_CLOTH = 1
 SHOPTYPE_ALI_ACCESSOR = 2
+
+
+# 读取配置
+with open("config.json", 'r') as file:
+    g_config_json = json.load(file)
 
 
 # /Common/Utils/ExcelUtil - getSheet()
@@ -238,7 +244,8 @@ def CalculateSignature(urlPath, data, shopName):
     mergedParams = bytes(mergedParams, 'utf8')
 
     # 执行hmac_sha1算法 && 转为16进制
-    hex_res1 = hmac.new(AppSecret[shopName], mergedParams, digestmod="sha1").hexdigest()
+    secret = g_config_json['店铺'][shopName]['AppSecret'].encode()
+    hex_res1 = hmac.new(secret, mergedParams, digestmod="sha1").hexdigest()
 
     # 转为全大写字符
     hex_res1 = hex_res1.upper()
@@ -248,11 +255,11 @@ def CalculateSignature(urlPath, data, shopName):
 
 # 交易数据获取  默认1页
 def GetTradeData(data, shopName):
-    data['access_token'] = access_token[shopName]
-    _aop_signature = CalculateSignature(request_type['trade'] + "alibaba.trade.getSellerOrderList/" + AppKey[shopName],
+    data['access_token'] = g_config_json['店铺'][shopName]['access_token']
+    _aop_signature = CalculateSignature(request_type['trade'] + "alibaba.trade.getSellerOrderList/" + g_config_json['店铺'][shopName]['AppKey'],
                                         data, shopName)
     data['_aop_signature'] = _aop_signature
-    url = base_url + request_type['trade'] + "alibaba.trade.getSellerOrderList/" + AppKey[shopName]
+    url = base_url + request_type['trade'] + "alibaba.trade.getSellerOrderList/" + g_config_json['店铺'][shopName]['AppKey']
     try:
         time.sleep(0.2)
         response = requests.post(url, data=data)
@@ -264,12 +271,12 @@ def GetTradeData(data, shopName):
 
 # 已发货物流信息
 def GetDeliveryData(data, shopName):
-    data['access_token'] = access_token[shopName]
+    data['access_token'] = g_config_json['店铺'][shopName]['access_token']
     _aop_signature = CalculateSignature(
-        request_type['delivery'] + "alibaba.trade.getLogisticsInfos.sellerView/" + AppKey[shopName], data, shopName)
+        request_type['delivery'] + "alibaba.trade.getLogisticsInfos.sellerView/" + g_config_json['店铺'][shopName]['AppKey'], data, shopName)
     data['_aop_signature'] = _aop_signature
 
-    url = base_url + request_type['delivery'] + "alibaba.trade.getLogisticsInfos.sellerView/" + AppKey[shopName]
+    url = base_url + request_type['delivery'] + "alibaba.trade.getLogisticsInfos.sellerView/" + g_config_json['店铺'][shopName]['AppKey']
 
     response = requests.post(url, data=data)
 
@@ -278,13 +285,13 @@ def GetDeliveryData(data, shopName):
 
 # 已发货物流信息+单号信息
 def GetDeliveryTraceData(data, shopName):
-    data['access_token'] = access_token[shopName]
+    data['access_token'] = g_config_json['店铺'][shopName]['access_token']
     tmp = CalculateSignature(
-        'param2/1/com.alibaba.logistics/alibaba.trade.getLogisticsInfos.sellerView/' + AppKey[shopName], data, shopName)
+        'param2/1/com.alibaba.logistics/alibaba.trade.getLogisticsInfos.sellerView/' + g_config_json['店铺'][shopName]['AppKey'], data, shopName)
     _aop_signature = CalculateSignature(
-        request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + AppKey[shopName], data, shopName)
+        request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + g_config_json['店铺'][shopName]['AppKey'], data, shopName)
     data['_aop_signature'] = _aop_signature
-    url = base_url + request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + AppKey[shopName]
+    url = base_url + request_type['delivery'] + "alibaba.trade.getLogisticsTraceInfo.sellerView/" + g_config_json['店铺'][shopName]['AppKey']
 
     response = requests.post(url, data=data)
 
@@ -292,11 +299,11 @@ def GetDeliveryTraceData(data, shopName):
 
 
 def GetSingleTradeData(data, shopName):
-    data['access_token'] = access_token[shopName]
-    _aop_signature = CalculateSignature(request_type['trade'] + "alibaba.trade.get.sellerView/" + AppKey[shopName],
+    data['access_token'] = g_config_json['店铺'][shopName]['access_token']
+    _aop_signature = CalculateSignature(request_type['trade'] + "alibaba.trade.get.sellerView/" + g_config_json['店铺'][shopName]['AppKey'],
                                         data, shopName)
     data['_aop_signature'] = _aop_signature
-    url = base_url + request_type['trade'] + "alibaba.trade.get.sellerView/" + AppKey[shopName]
+    url = base_url + request_type['trade'] + "alibaba.trade.get.sellerView/" + g_config_json['店铺'][shopName]['AppKey']
     response = requests.post(url, data=data)
 
     return response.json()
@@ -361,16 +368,8 @@ class Window:
         qfile.close()
         self.ui = QUiLoader().load(qfile)
 
-        ## 菜单
-        menuBar = self.ui.menuBar()
-        menuSetting = menuBar.addMenu("设置")
-        menuSettingKey = menuSetting.addAction("Key设置")
-
-        menuSettingKey.triggered.connect(self.OpenMenuSetting)
-
         self.AliChildClothInit()
 
-        self.AliAccessorInit()
 
     def AliChildClothInit(self):
         # 订单时间
@@ -396,9 +395,20 @@ class Window:
         self.ui.priceTablePathButton.clicked.connect(self.CheckPriceTablePath)
 
         # self.ui.shopName.addItem("万盈饰品厂")
-        self.ui.shopName.addItem("联球制衣厂+朝雄制衣厂")
-        self.ui.shopName.addItem("联球制衣厂")
-        self.ui.shopName.addItem("朝雄制衣厂")
+        # self.ui.shopName.addItem("联球制衣厂+朝雄制衣厂")
+        # self.ui.shopName.addItem("联球制衣厂")
+        # self.ui.shopName.addItem("朝雄制衣厂")
+
+        all_shop_str = ""
+        for shopName in g_config_json["店铺"]:
+            if all_shop_str != "":
+                all_shop_str += "+"
+            all_shop_str += shopName
+
+        self.ui.shopName.addItem(all_shop_str)
+
+        for shopName in g_config_json["店铺"]:
+            self.ui.shopName.addItem(shopName)
 
         self.ui.Tag.addItem("无")
         self.ui.Tag.addItem("红")
@@ -463,9 +473,12 @@ class Window:
         self.createEndTime = datetime(int(self.endYear), int(self.endMonth), int(self.endDay)).strftime(
             '%Y%m%d') + '000000000+0800'
 
-        self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
+        # self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
 
-        self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
+        # self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
+
+        self.isPrintOwn = False
+        self.isPrintUnitPrice = False
 
         # 配置日志
         logPath = logging_path + datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + '.log'
@@ -572,11 +585,16 @@ class Window:
         self.deleveredStartTime = int(self.ui.deleveredStartTime.dateTime().toString('yyyyMMddHHmmss'))
         self.deleveredEndTime = int(self.ui.deleveredEndTime.dateTime().toString('yyyyMMddHHmmss'))
 
+        self.deleveredStartTimeStr = self.ui.deleveredStartTime.dateTime().toString('yyyy-MM-dd')
+
         self.createEndTime = datetime(int(self.endYear), int(self.endMonth), int(self.endDay)).strftime(
             '%Y%m%d') + '000000000+0800'
 
-        self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
-        self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
+        # self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
+        # self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
+
+        self.isPrintOwn = False
+        self.isPrintUnitPrice = False
 
         self.Logout2("# 店铺名 ：" + self.shopName)
         self.Logout2("# 色标 ：" + self.ui.Tag.currentText())
@@ -1226,255 +1244,6 @@ class Window:
         self.Logout('end RequestPic ', 'debug')
         return picData
 
-    # 饰品 AliAccessor
-    def AliAccessorInit(self):
-        # 订单时间
-        todayTmp = datetime.strptime(str(date.today()), '%Y-%m-%d')
-        startDateTimeTmp = todayTmp + timedelta(days=-2)
-        endDateTimeTmp = todayTmp + timedelta(days=1)
-        self.ui.AliAccessorStartTime.setDateTime(
-            QDateTime(QDate(startDateTimeTmp.year, startDateTimeTmp.month, startDateTimeTmp.day), QTime(0, 0, 0)))
-        self.ui.AliAccessorEndTime.setDateTime(
-            QDateTime(QDate(endDateTimeTmp.year, endDateTimeTmp.month, endDateTimeTmp.day), QTime(0, 0, 0)))
-
-        # 发货时间
-        self.ui.AliAccessorDeleveredStartTime.setDateTime(
-            QDateTime(QDate(todayTmp.year, todayTmp.month, todayTmp.day + 0), QTime(0, 0, 0)))
-        self.ui.AliAccessorDeleveredEndTime.setDateTime(
-            QDateTime(QDate(todayTmp.year, todayTmp.month, todayTmp.day + 1), QTime(0, 0, 0)))
-
-        self.ui.AliAccessorPriceTablePath.setText("price.xlsx")
-        self.ui.priceTablePathButton.clicked.connect(self.CheckPriceTablePath)
-
-        self.ui.AliAccessorShopName.addItem("万盈饰品厂")
-
-        self.ui.AliAccessorTag.addItem("无")
-        self.ui.AliAccessorTag.addItem("红")
-        self.ui.AliAccessorTag.addItem("蓝")
-        self.ui.AliAccessorTag.addItem("绿")
-        self.ui.AliAccessorTag.addItem("黄")
-        self.ui.AliAccessorTag.addItem("按单号")
-
-        self.ui.AliAccessorOrderStatus.addItem("已发货")
-        self.ui.AliAccessorOrderStatus.addItem("待发货 + 已发货")
-        self.ui.AliAccessorOrderStatus.addItem("待发货")
-        self.ui.AliAccessorOrderStatus.addItem("待付款")
-        self.ui.AliAccessorOrderStatus.addItem("历史订单")
-
-        self.ui.AliAccessorCommit.clicked.connect(self.AliAccessorCalculateBeiHuoTable)
-
-        # MenuA = MenuBar.addMenu("MenuA")
-        # MenuA1 = MenuA.addMenu("A1")  # 菜单嵌套子菜单
-        # MenuA1.addAction("A1a")
-        # MenuA1.addAction("A1b")
-        # ActionA2 = MenuA.addAction("A2")  # 菜单添加Action
-        # MenuB = MenuBar.addMenu("MenuB")
-        # MenuB1 = MenuB.addMenu("B1")
-        # MenuB1.addAction("B1a")
-        # MenuB1.addAction("B1b")
-        # MenuB.addAction("B2")
-
-        self.errorUrl = ""
-
-        self.calStartTime = datetime.now()
-
-        self.ui.AliAccessorSaveFilePath.setText("备货单")
-        self.ui.AliAccessorSaveFilePathButton.clicked.connect(self.CheckSaveFilePath)
-
-        # 物流检查按钮
-        self.ui.AliAccessorCheckDelivery.clicked.connect(self.CheckDelivery)
-
-        #
-        self.shopId = self.ui.AliAccessorShopName.currentIndex() + 1
-        self.shopName = self.ui.AliAccessorShopName.currentText()
-        self.mode = self.ui.AliAccessorTag.currentIndex()
-
-        self.orderStatus = self.ui.AliAccessorOrderStatus.currentIndex()
-
-        self.startYear = self.ui.AliAccessorStartTime.date().toString("yyyy")
-        self.startMonth = self.ui.AliAccessorStartTime.date().toString("MM")
-        self.startDay = self.ui.AliAccessorStartTime.date().toString("dd")
-
-        self.createStartTime = datetime(int(self.startYear), int(self.startMonth), int(self.startDay)).strftime(
-            '%Y%m%d') + '000000000+0800'
-
-        self.endYear = self.ui.AliAccessorEndTime.date().toString("yyyy")
-        self.endMonth = self.ui.AliAccessorEndTime.date().toString("MM")
-        self.endDay = self.ui.AliAccessorEndTime.date().toString("dd")
-        self.deleveredStartTime = int(self.ui.AliAccessorDeleveredStartTime.dateTime().toString('yyyyMMddHHmmss'))
-        self.deleveredEndTime = int(self.ui.AliAccessorDeleveredEndTime.dateTime().toString('yyyyMMddHHmmss'))
-
-        self.deleveredStartTimeStr = self.ui.AliAccessorDeleveredStartTime.dateTime().toString('yyyy-MM-dd')
-
-        self.createEndTime = datetime(int(self.endYear), int(self.endMonth), int(self.endDay)).strftime(
-            '%Y%m%d') + '000000000+0800'
-
-        self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
-
-        # 配置日志
-        logPath = logging_path + datetime.now().strftime("%m_%d_%H_%M_%S") + '.log'
-        logging.basicConfig(filename=logPath, level=logging.DEBUG,
-                            format='%(asctime)s - %(levelname)s - %(message)s')
-        logging.info('test')
-
-        self.Logout('end AliAccessorInit', 'debug')
-
-    def AliAccessorCheckAllParams(self):
-        self.Logout2("# 启动计算时间 : " + self.calStartTime.strftime('%Y-%m-%d %H:%M:%S'))
-        self.shopId = self.ui.AliAccessorShopName.currentIndex() + 1
-        self.shopName = self.ui.AliAccessorShopName.currentText()
-        self.mode = self.ui.AliAccessorTag.currentIndex()
-
-        self.orderStatus = self.ui.AliAccessorOrderStatus.currentIndex()
-
-        self.startYear = self.ui.AliAccessorStartTime.date().toString("yyyy")
-        self.startMonth = self.ui.AliAccessorStartTime.date().toString("MM")
-        self.startDay = self.ui.AliAccessorStartTime.date().toString("dd")
-
-        self.createStartTime = datetime(int(self.startYear), int(self.startMonth), int(self.startDay)).strftime(
-            '%Y%m%d') + '000000000+0800'
-
-        self.endYear = self.ui.AliAccessorEndTime.date().toString("yyyy")
-        self.endMonth = self.ui.AliAccessorEndTime.date().toString("MM")
-        self.endDay = self.ui.AliAccessorEndTime.date().toString("dd")
-        self.deleveredStartTime = int(self.ui.AliAccessorDeleveredStartTime.dateTime().toString('yyyyMMddHHmmss'))
-        self.deleveredEndTime = int(self.ui.AliAccessorDeleveredEndTime.dateTime().toString('yyyyMMddHHmmss'))
-
-        self.createEndTime = datetime(int(self.endYear), int(self.endMonth), int(self.endDay)).strftime(
-            '%Y%m%d') + '000000000+0800'
-
-        self.isPrintOwn = self.ui.AliAccessorIsPrintOwn.isChecked()
-        self.isPrintUnitPrice = self.ui.AliAccessorIsPrintUnitPrice.isChecked()
-
-        self.Logout2("# 店铺名 ：" + self.shopName)
-        self.Logout2("# 色标 ：" + self.ui.AliAccessorTag.currentText())
-        self.Logout2("# 订单开始时间 ：" + self.ui.AliAccessorStartTime.date().toString("yyyy-MM-dd"))
-        self.Logout2("# 订单截止时间 ：" + self.ui.AliAccessorEndTime.date().toString("yyyy-MM-dd"))
-
-        self.isLimitDeleveredTime = self.ui.AliAccessorIsLimitDeleveredTime.isChecked()
-
-        if self.isLimitDeleveredTime:
-            self.limitDeliveredTime = {
-                'deleveredStartTime': self.deleveredStartTime,
-                'deleveredEndTime': self.deleveredEndTime
-            }
-        else:
-            self.limitDeliveredTime = {}
-
-    def AliAccessorCalculateBeiHuoTable(self):
-        self.Logout('AliAccessorCalculateBeiHuoTable', 'debug')
-        self.AliAccessorCheckAllParams()
-        try:
-            _thread.start_new_thread(self.OrderList, (
-                self.shopName, int(self.mode), self.createStartTime, self.createEndTime, self.orderStatus,
-                self.isPrintOwn,
-                self.limitDeliveredTime, self.isPrintUnitPrice, SHOPTYPE_ALI_ACCESSOR))
-            self.Logout2("\n # 启动计算 请稍后 \n")
-
-        except:
-            self.Logout2("Error: 无法计算启动线程")
-
-    def AliAccessorGetBeihuoJson(self, orders, is_print_own, mode=0, limit_delivered_time={}, isPrintUnitPrice=False):
-        self.Logout('AliAccessorGetBeihuoJson', 'debug')
-        beihuo_json = {}
-
-        for order in orders:
-            if mode != 0 and (
-                    'sellerRemarkIcon' not in order['baseInfo'] or order['baseInfo']['sellerRemarkIcon'] != str(mode)):
-                continue
-            if 'sellerRemarkIcon' in order['baseInfo'] and (
-                    order['baseInfo']['sellerRemarkIcon'] == '2' or order['baseInfo']['sellerRemarkIcon'] == '3'):
-                print("刷单")
-                continue
-            for product_item in order['productItems']:
-                cargo_number_tag = 'cargoNumber' if 'cargoNumber' in product_item else 'productCargoNumber'
-                cargo_number = product_item[cargo_number_tag]
-                color = product_item['skuInfos'][0]['value']
-
-                product_dict = beihuo_json.setdefault(cargo_number, {'color': color, 'quantity': 0,
-                                                                     'price': GetCost(cargo_number, color),
-                                                                     'productImgUrl': product_item['productImgUrl'][1]})
-                product_dict['quantity'] += product_item['quantity']
-                product_dict['cost'] = product_dict['price'] * product_dict['quantity']
-
-        self.AliAccessorGetTable(beihuo_json, is_print_own, isPrintUnitPrice)
-
-    def AliAccessorGetTable(self, BeihuoJson, isPrintOwn, isPrintUnitPrice):
-        # 制表
-        BeihuoList = []
-
-        for item in BeihuoJson:
-            BeihuoList.append(item)
-
-        # 写表
-        savePath = self.ui.saveFilePath.toPlainText().split('.')[0]
-
-        # 保存备货单
-        BH_wb = xlsxwriter.Workbook(savePath + '/' + self.calStartTime.strftime("%m_%d_%H_%M_%S") + "_饰品.xlsx")
-        BH_sheet = BH_wb.add_worksheet('BH')
-        BH_x = 0
-        BH_y = 0
-
-        sumCountX = 0
-
-        for cargoNumber in BeihuoJson:
-            BH_sheet.write(BH_x, BH_y, cargoNumber)  # 货号
-            BH_y += 1
-            BH_sheet.write(BH_x, BH_y, BeihuoJson[cargoNumber]['color'])  # 品名
-            BH_y += 1
-            BH_sheet.write(BH_x, BH_y, BeihuoJson[cargoNumber]['quantity'])  # 数量
-            BH_y += 1
-            # BH_sheet.write(BH_x, BH_y, BeihuoJson[cargoNumber]['cost'])  # 总价
-            # BH_y += 1
-
-            # 插图
-            imgUrl = BeihuoJson[cargoNumber]['productImgUrl']
-            imageName = imgUrl.split('.jpg')[0].split('/')[-1]
-
-            if ImageHandler.IsImageExist(imageName):
-                time.sleep(0.2)
-                # 本地存有图片，读出
-                self.Logout("before read img " + imageName, 'debug')
-                imageData = ImageHandler.ReadImageFromDir(imageName)
-                self.Logout("after read img " + imageName, 'debug')
-
-                self.Logout("读取本地图片")
-
-            else:
-                self.Logout("下载图片")
-                # time.sleep(0.5)
-                rt = self.RequestPic(imgUrl)
-
-                if rt == 420:
-                    # 本地存有图片，读出
-                    imageData = ImageHandler.ReadImageFromDir(imageName)
-
-                    self.Logout("读取到手动下载图片")
-                elif rt == 400:
-                    imageData = ImageHandler.ReadImageFromDir(imageName)
-                else:
-
-                    imageDataRaw = rt.read()
-
-                    imageData = io.BytesIO(imageDataRaw)
-
-                    # 保存图片
-                    ImageHandler.SaveImage(imageData.getvalue(), imageName)
-
-            logging.debug("before insert img " + imageName)
-            BH_sheet.insert_image(BH_x, BH_y, imageName,
-                                  {'image_data': imageData, 'x_offset': 3, 'x_scale': 0.14, 'y_scale': 0.14})
-            logging.debug("end insert img " + imageName)
-
-            sumCountX = BH_x + 1
-
-            BH_x += 6
-
-            BH_y = 0
-
-        sumCountX += 6
-
-        BH_wb.close()
 
 
 if __name__ == '__main__':

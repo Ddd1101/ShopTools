@@ -1,0 +1,14 @@
+{
+    "店铺":{
+        "联球制衣厂":{
+            "AppKey":"3527689",
+            "AppSecret":"Zw5KiCjSnL",
+            "access_token":"999d182a-3576-4aee-97c5-8eeebce5e085"
+        },
+        "朝雄制衣厂":{
+            "AppKey":"4834884",
+            "AppSecret":"JeV4khKJshr",
+            "access_token":"ef65f345-7060-4031-98ad-57d7d857f4d9"
+        }
+    }
+}
