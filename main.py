@@ -171,6 +171,15 @@ def CalPriceLocation(_size):
     # print(_col)
     return _col
 
+def CalPriceColByName(_size):
+    if _size[0] in en_code:
+        return CalPriceLocationENCode(_size)
+
+    for col in range(worksheet.ncols):
+        if worksheet.cell_value(0, col) == CalSize(_size):
+            return col
+    return -1
+
 
 def GetCost(cargoNumber, skuInfosValue, colNum=0):
     rowIndex = -1
@@ -181,7 +190,7 @@ def GetCost(cargoNumber, skuInfosValue, colNum=0):
     if rowIndex == -1:
         print(cargoNumber + " ： 未找到对应货号")
         return 0
-    colIndex = CalPriceLocation(skuInfosValue)
+    colIndex = CalPriceColByName(skuInfosValue)
     if colIndex != None:
         _price = worksheet.cell(rowIndex, int(colIndex)).value
     else:
