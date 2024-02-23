@@ -985,7 +985,7 @@ class Window:
         savePath = self.ui.saveFilePath.toPlainText().split('.')[0]
 
         # 保存备货单
-        BH_wb = xlsxwriter.Workbook(savePath + '/' + datetime.now().strftime("%m月%d日%H时%M分%S秒") + ".xlsx")
+        BH_wb = xlsxwriter.Workbook(savePath + '/' + datetime.now().strftime("%m_%d-%H_%M_%S") + ".xlsx")
         BH_sheet = BH_wb.add_worksheet('BH')
         BH_pay_sheet = BH_wb.add_worksheet('pay')
         BH_x = 0
@@ -1250,8 +1250,25 @@ if __name__ == '__main__':
     # 高分辨率适配
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
-    app = QApplication([])
-    w = Window()
-    w.ui.show()
 
-    app.exec_()
+    
+    app = QApplication([])
+
+    # 获取当前时间
+    current_time = datetime.now()
+
+    # 指定日期为2024年6月1日
+    specified_date = datetime(2024, 6, 1)
+
+    if current_time > specified_date:
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle("提示")
+        msg_box.setText("超过使用时长，联系管理员")
+
+        msg_box.exec_()
+
+        sys.exit(app.exec_())
+    else:
+        w = Window()
+        w.ui.show()
+        app.exec_()
