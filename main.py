@@ -206,11 +206,15 @@ def GetCost(cargoNumber, skuInfosValue, colNum=0):
     if global_SHOPTYPE == SHOPTYPE_ALI_CHILD_CLOTH:
         rowIndex = -1
         for t in range(1, worksheet.nrows):
-            if str(cargoNumber) == str(worksheet.cell(t, colNum).value):
+            value = worksheet.cell(t, colNum).value
+            if isinstance(value, int) or isinstance(value, float):
+                value = int(value)
+            print(str(cargoNumber), str(value))
+            if str(cargoNumber) == str(value):
                 rowIndex = t
                 break
         if rowIndex == -1:
-            print(cargoNumber + " ： 未找到对应货号")
+            print(cargoNumber + " ： 未找到对应货号1")
             return 0
         colIndex = CalPriceColByName(skuInfosValue)
         if colIndex != None:
@@ -234,7 +238,7 @@ def GetCost(cargoNumber, skuInfosValue, colNum=0):
                 rowIndex = t
                 break
         if rowIndex == -1:
-            print(cargoNumber + " ： 未找到对应货号")
+            print(cargoNumber + " ： 未找到对应货号2")
             return 0
         colIndex = 2
         if colIndex != None:
