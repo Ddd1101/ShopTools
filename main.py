@@ -209,7 +209,7 @@ def GetCost(cargoNumber, skuInfosValue, colNum=0):
             value = worksheet.cell(t, colNum).value
             if isinstance(value, int) or isinstance(value, float):
                 value = int(value)
-            print(str(cargoNumber), str(value))
+            # print(str(cargoNumber), str(value))
             if str(cargoNumber) == str(value):
                 rowIndex = t
                 break
@@ -252,10 +252,15 @@ def GetCost(cargoNumber, skuInfosValue, colNum=0):
 def GetAdressAndShopName(cargoNumber):
     rowIndex = -1
     for t in range(1, worksheet.nrows):
-        if cargoNumber == worksheet.cell(t, 0).value:
+        value = worksheet.cell(t, 0).value
+        if isinstance(value, int) or isinstance(value, float):
+            value = int(value)
+        print(str(cargoNumber), str(value))
+        if str(cargoNumber) == str(value):
             rowIndex = t
             break
     if rowIndex == -1:
+        print(str(cargoNumber) + " 没找到厂家")
         return ["", "", ""]
     productName = worksheet.cell(rowIndex, 1).value
     adress = worksheet.cell(rowIndex, 2).value
@@ -1722,6 +1727,7 @@ class Window:
         self.ui.priceTablePathButton.clicked.connect(self.CheckPriceTablePath)
 
         self.ui.AliAccessorShopName.addItem("万盈饰品厂")
+        self.ui.AliAccessorShopName.addItem("义乌睿得")
 
         self.ui.AliAccessorTag.addItem("无")
         self.ui.AliAccessorTag.addItem("红")
