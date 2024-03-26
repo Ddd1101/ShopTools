@@ -37,16 +37,19 @@ dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, "plugins", "platforms")
 os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = plugin_path
 
-AppKey = {"联球制衣厂": "3527689", "朝雄制衣厂": "4834884", "万盈饰品厂": "2888236"}
+AppKey = {"联球制衣厂": "3527689", "朝雄制衣厂": "4834884", "万盈饰品厂": "2888236", "义乌睿得": "3527689"}
 AppSecret = {
     "联球制衣厂": b"Zw5KiCjSnL",
     "朝雄制衣厂": b"JeV4khKJshr",
     "万盈饰品厂": b"Zy7QvG0bQJI",
+    "义乌睿得": b"Zw5KiCjSnL"
 }
 access_token = {
     "联球制衣厂": "999d182a-3576-4aee-97c5-8eeebce5e085",
     "朝雄制衣厂": "ef65f345-7060-4031-98ad-57d7d857f4d9",
+
     "万盈饰品厂": "f2f18480-0067-462f-9fac-952311ad4349",
+    "义乌睿得": "7f813331-15d6-40a8-97ac-00589efc8e81"
 }
 
 # /ShopBackData/Common/GlobleDate - EnglishCode
@@ -855,6 +858,7 @@ class Window:
         global_SHOPTYPE = shopType
         worksheet = GetPriceGrid()
         if mode == 5:
+            print(self.ui.orderId.toPlainText())
             orderId = int(self.ui.orderId.toPlainText())
             self.order = self.GetSingleOrder(
                 shopName, orderId, isPrintOwn, isPrintUnitPrice
