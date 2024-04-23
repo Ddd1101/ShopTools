@@ -1015,14 +1015,14 @@ class Window:
                                 or order["baseInfo"]["sellerRemarkIcon"] == "3"
                             ):
                                 continue
-                            elif (
-                                mode != 0
-                                and "sellerRemarkIcon" not in order["baseInfo"]
-                            ):
-                                if mode == 1:
-                                    order["baseInfo"]["sellerRemarkIcon"] = "1"
-                                elif mode == 4:
-                                    order["baseInfo"]["sellerRemarkIcon"] = "4"
+                            # elif (
+                            #     mode != 0
+                            #     and "sellerRemarkIcon" not in order["baseInfo"]
+                            # ):
+                            #     if mode == 1:
+                            #         order["baseInfo"]["sellerRemarkIcon"] = "1"
+                            #     elif mode == 4:
+                            #         order["baseInfo"]["sellerRemarkIcon"] = "4"
 
                     orderListRaw += response["result"]
 
