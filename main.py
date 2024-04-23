@@ -80,6 +80,7 @@ SHOPTYPE_ALI_CHILD_CLOTH = 1
 SHOPTYPE_ALI_ACCESSOR = 2
 
 global_SHOPTYPE = SHOPTYPE_ALI_CHILD_CLOTH
+global_OrderNum = 0
 
 
 # /Common/Utils/ExcelUtil - getSheet()
@@ -1045,6 +1046,8 @@ class Window:
                 orderListRaw.clear()
 
         self.Logout2("# " + orderstatusStr + " : " + str(len(orderList)) + "条记录")
+        global global_OrderNum
+        global_OrderNum = len(orderList)
 
         if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
             self.GetBeihuoJson(
@@ -1156,6 +1159,8 @@ class Window:
                 orderListRaw.clear()
 
         self.Logout2("# " + statusStr + " : " + str(len(orderList)) + "条记录")
+        global global_OrderNum
+        global_OrderNum = len(orderList)
 
         if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
             self.GetBeihuoJson(
@@ -1244,6 +1249,8 @@ class Window:
                 orderList = orderListRaw
 
         self.Logout2("# " + orderstatusStr + " : " + str(len(orderList)) + "条记录")
+        global global_OrderNum
+        global_OrderNum = len(orderList)
 
         self.GetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime)
 
@@ -2067,6 +2074,20 @@ class Window:
         writeStr = "拿货成本总计：" + str(amount) + " 元"
         BH_sheet.merge_range(
             "A" + str(sumCountX + 1) + ":D" + str(sumCountX + 1),
+            writeStr,
+            priceStyle,
+        )
+        global global_OrderNum
+        writeStr = "订  单  数：" + str(global_OrderNum) + " 笔订单"
+        BH_sheet.merge_range(
+            "A" + str(sumCountX + 2) + ":D" + str(sumCountX + 2),
+            writeStr,
+            priceStyle,
+        )
+        writeStr = "快递费+盒子：" + str(round(global_OrderNum * 2.8, 2)) + " 元"
+        global_OrderNum = 0
+        BH_sheet.merge_range(
+            "A" + str(sumCountX + 3) + ":D" + str(sumCountX + 3),
             writeStr,
             priceStyle,
         )
