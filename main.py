@@ -37,19 +37,23 @@ dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, "plugins", "platforms")
 os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = plugin_path
 
-AppKey = {"联球制衣厂": "3527689", "朝雄制衣厂": "4834884", "万盈饰品厂": "2888236", "义乌睿得": "3527689"}
+AppKey = {
+    "联球制衣厂": "3527689",
+    "朝雄制衣厂": "4834884",
+    "万盈饰品厂": "2888236",
+    "义乌睿得": "3527689",
+}
 AppSecret = {
     "联球制衣厂": b"Zw5KiCjSnL",
     "朝雄制衣厂": b"JeV4khKJshr",
     "万盈饰品厂": b"Zy7QvG0bQJI",
-    "义乌睿得": b"Zw5KiCjSnL"
+    "义乌睿得": b"Zw5KiCjSnL",
 }
 access_token = {
     "联球制衣厂": "999d182a-3576-4aee-97c5-8eeebce5e085",
     "朝雄制衣厂": "ef65f345-7060-4031-98ad-57d7d857f4d9",
-
     "万盈饰品厂": "f2f18480-0067-462f-9fac-952311ad4349",
-    "义乌睿得": "7f813331-15d6-40a8-97ac-00589efc8e81"
+    "义乌睿得": "7f813331-15d6-40a8-97ac-00589efc8e81",
 }
 
 # /ShopBackData/Common/GlobleDate - EnglishCode
@@ -245,7 +249,7 @@ def GetCost(cargoNumber, skuInfosValue, colNum=0):
                 rowIndex = t
                 break
         if rowIndex == -1:
-            print(cargoNumber + " ： 未找到对应货号2")
+            print(str(cargoNumber) + " ： 未找到对应货号2")
             return 0
         colIndex = 2
         if colIndex != None:
@@ -1376,7 +1380,7 @@ class Window:
 
         # 保存备货单
         BH_wb = xlsxwriter.Workbook(
-            savePath + "/" + datetime.now().strftime("%m月%d日%H时%M分%S秒") + ".xlsx"
+            savePath + "/" + datetime.now().strftime("%m_%d_%H_%M_%S") + ".xlsx"
         )
         BH_sheet = BH_wb.add_worksheet("BH")
         BH_pay_sheet = BH_wb.add_worksheet("pay")
@@ -1953,7 +1957,10 @@ class Window:
                     else "productCargoNumber"
                 )
                 cargo_number = product_item[cargo_number_tag]
-                color = product_item["skuInfos"][0]["value"]
+                if "skuInfos" not in product_item:
+                    color = "无sku"
+                else:
+                    color = product_item["skuInfos"][0]["value"]
 
                 product_dict = beihuo_json.setdefault(
                     cargo_number,
