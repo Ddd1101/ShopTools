@@ -860,8 +860,13 @@ class Window:
         global_SHOPTYPE = shopType
         worksheet = GetPriceGrid()
         if mode == 5:
-            print(self.ui.orderId.toPlainText())
-            orderId = int(self.ui.orderId.toPlainText())
+            orderId = 0
+            if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
+                print(self.ui.AliAccessorOrderId.toPlainText())
+                orderId = int(self.ui.orderId.toPlainText())
+            elif shopType == SHOPTYPE_ALI_ACCESSOR:
+                print(self.ui.AliAccessorOrderId.toPlainText())
+                orderId = int(self.ui.AliAccessorOrderId.toPlainText())
             self.order = self.GetSingleOrder(
                 shopName, orderId, isPrintOwn, isPrintUnitPrice
             )
@@ -1248,7 +1253,10 @@ class Window:
         data["orderId"] = orderId
         tmp = GetSingleTradeData(data, shopName)
         orderList.append(tmp["result"])
-        self.GetBeihuoJson(orderList, isPrintOwn, 0)
+        if global_SHOPTYPE == SHOPTYPE_ALI_CHILD_CLOTH:
+            self.GetBeihuoJson(orderList, isPrintOwn, 0)
+        elif global_SHOPTYPE == SHOPTYPE_ALI_ACCESSOR:
+            self.AliAccessorGetBeihuoJson(orderList, isPrintOwn, 0)
 
     def GetBeihuoJson(
         self,
