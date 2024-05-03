@@ -39,9 +39,9 @@ dirname = os.path.dirname(PySide2.__file__)
 plugin_path = os.path.join(dirname, "plugins", "platforms")
 os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = plugin_path
 
-AppKey = {"义乌睿德": "3527689"}
-AppSecret = {"义乌睿德": b"Zw5KiCjSnL"}
-access_token = {"义乌睿德": "7f813331-15d6-40a8-97ac-00589efc8e81"}
+AppKey = {"义乌茜阳": "4834884"}
+AppSecret = {"义乌茜阳": b"JeV4khKJshr"}
+access_token = {"义乌茜阳": "a8de29c8-ff57-4336-b4e7-e1c3d1c72f34"}
 
 # /ShopBackData/Common/GlobleDate - EnglishCode
 en_code = ["s", "S", "m", "M", "l", "L", "x", "X"]
@@ -1538,7 +1538,7 @@ class Window:
             self.CheckPriceTablePath
         )
 
-        self.ui.AliAccessorShopName.addItem("义乌睿德")
+        self.ui.AliAccessorShopName.addItem("义乌茜阳")
 
         self.ui.AliAccessorTag.addItem("无")
         self.ui.AliAccessorTag.addItem("红")
