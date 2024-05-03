@@ -24,6 +24,8 @@ from xlsxwriter import workbook
 
 import Common.ImageHandler as ImageHandler
 
+from PIL import Image
+
 # Views
 from View.MenuSettingView import *
 
@@ -1823,6 +1825,15 @@ class Window:
                     # 保存图片
                     ImageHandler.SaveImage(imageData.getvalue(), imageName)
 
+            # 使用Pillow打开图像数据
+            img = Image.open(imageData)
+
+            # 获取图像尺寸
+            width, height = img.size
+
+            x_scale = 112.0 / width
+            y_scale = 112.0 / height
+
             logging.debug("before insert img " + imageName)
             BH_sheet.insert_image(
                 BH_x,
@@ -1831,8 +1842,8 @@ class Window:
                 {
                     "image_data": imageData,
                     "x_offset": 3,
-                    "x_scale": 0.14,
-                    "y_scale": 0.14,
+                    "x_scale": x_scale,
+                    "y_scale": y_scale,
                 },
             )
             logging.debug("end insert img " + imageName)
