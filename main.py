@@ -19,6 +19,7 @@ import PySide2
 import _thread
 
 import logging
+import xlwt
 
 from xlsxwriter import workbook
 
@@ -67,6 +68,9 @@ sumReporter = {}
 SHOPTYPE_ALI_CHILD_CLOTH = 1
 SHOPTYPE_ALI_ACCESSOR = 2
 
+global_SHOP_TYPE = SHOPTYPE_ALI_ACCESSOR
+
+global_OrderNum = 0
 
 # /Common/Utils/ExcelUtil - getSheet()
 def GetPriceGrid():
@@ -187,8 +191,14 @@ def CalPriceColByName(_size):
             return col
     return -1
 
-
 def GetCost(cargoNumber, skuInfosValue, colNum=0):
+    if global_SHOP_TYPE == SHOPTYPE_ALI_CHILD_CLOTH:
+        return ClothGetCost(cargoNumber, skuInfosValue, colNum)
+    elif global_SHOP_TYPE == SHOPTYPE_ALI_ACCESSOR:
+        return AccessorGetCost(cargoNumber, skuInfosValue, colNum)
+
+
+def ClothGetCost(cargoNumber, skuInfosValue, colNum=0):
     rowIndex = -1
     for t in range(1, worksheet.nrows):
         if str(cargoNumber) == str(worksheet.cell(t, colNum).value):
@@ -208,6 +218,30 @@ def GetCost(cargoNumber, skuInfosValue, colNum=0):
         )
         _price = 0
     return float(_price)
+
+def AccessorGetCost(cargoNumber, skuInfosValue, colNum=0):
+    rowIndex = -1
+    for t in range(1, worksheet.nrows):
+        if str(cargoNumber) == str(worksheet.cell(t, colNum).value):
+            rowIndex = t
+            break
+    if rowIndex == -1:
+        print(cargoNumber + " ： 未找到对应货号")
+        return 0
+    colIndex = 1
+    if colIndex != None:
+        _price = worksheet.cell(rowIndex, int(colIndex)).value
+    else:
+        _price = ""
+    if _price == "":
+        print(
+            "货号：" + cargoNumber + " 规格： " + skuInfosValue + " ： 未找到对应价格"
+        )
+        _price = 0
+
+    return float(_price)
+
+
 
 
 # 由货号得到产品名 - 厂家地址 - 厂家名
@@ -844,6 +878,8 @@ class Window:
                 orderListRaw.clear()
 
         self.Logout2("# " + orderstatusStr + " : " + str(len(orderList)) + "条记录")
+        global global_OrderNum
+        global_OrderNum = len(orderList)
 
         if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
             self.GetBeihuoJson(
@@ -955,6 +991,8 @@ class Window:
                 orderListRaw.clear()
 
         self.Logout2("# " + statusStr + " : " + str(len(orderList)) + "条记录")
+        global global_OrderNum
+        global_OrderNum = len(orderList)
 
         if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
             self.GetBeihuoJson(
@@ -1043,6 +1081,8 @@ class Window:
                 orderList = orderListRaw
 
         self.Logout2("# " + orderstatusStr + " : " + str(len(orderList)) + "条记录")
+        global global_OrderNum
+        global_OrderNum = len(orderList)
 
         self.GetBeihuoJson(orderList, isPrintOwn, mode, limitDeliveredTime)
 
@@ -1612,6 +1652,10 @@ class Window:
             + "000000000+0800"
         )
 
+        # 全局参数
+        global global_SHOP_TYPE
+        global_SHOP_TYPE = SHOPTYPE_ALI_ACCESSOR
+
         # 配置日志
         logPath = logging_path + datetime.now().strftime("%m_%d_%H_%M_%S") + ".log"
         logging.basicConfig(
@@ -1744,7 +1788,11 @@ class Window:
                     if "cargoNumber" in product_item
                     else "productCargoNumber"
                 )
-                cargo_number = product_item[cargo_number_tag]
+                if cargo_number_tag in product_item:
+                    cargo_number = product_item[cargo_number_tag]
+                else:
+                    cargo_number = ""
+
                 color = product_item["skuInfos"][0]["value"]
 
                 product_dict = beihuo_json.setdefault(
@@ -1762,6 +1810,7 @@ class Window:
         self.AliAccessorGetTable(beihuo_json, is_print_own, isPrintUnitPrice)
 
     def AliAccessorGetTable(self, BeihuoJson, isPrintOwn, isPrintUnitPrice):
+        sumCost = 0
         # 制表
         BeihuoList = []
 
@@ -1776,7 +1825,25 @@ class Window:
             savePath + "/" + self.calStartTime.strftime("%m_%d_%H_%M_%S") + "_饰品.xlsx"
         )
         BH_sheet = BH_wb.add_worksheet("BH")
-        BH_x = 0
+
+        header_font = xlwt.Font()
+        header_font.name = "Arial"
+        header_font.bold = True
+        headerStyle = BH_wb.add_format(
+            {
+                # "fg_color": "yellow",  # 单元格的背景颜色
+                "bold": 1,  # 字体加粗
+                "align": "left",  # 对齐方式
+                "valign": "vcenter",  # 字体对齐方式]
+            }
+        )
+        BH_sheet.write(0, 1, "货号")
+        BH_sheet.write(0, 1, "品名")
+        BH_sheet.write(0, 2, "单价")
+        BH_sheet.write(0, 3, "数量")
+        BH_sheet.write(0, 4, "总价")
+
+        BH_x = 1
         BH_y = 0
 
         sumCountX = 0
@@ -1786,10 +1853,13 @@ class Window:
             BH_y += 1
             BH_sheet.write(BH_x, BH_y, BeihuoJson[cargoNumber]["color"])  # 品名
             BH_y += 1
+            BH_sheet.write(BH_x, BH_y, BeihuoJson[cargoNumber]['price'])  # 单价
+            BH_y += 1
             BH_sheet.write(BH_x, BH_y, BeihuoJson[cargoNumber]["quantity"])  # 数量
             BH_y += 1
-            # BH_sheet.write(BH_x, BH_y, BeihuoJson[cargoNumber]['cost'])  # 总价
-            # BH_y += 1
+            BH_sheet.write(BH_x, BH_y, BeihuoJson[cargoNumber]['cost'])  # 总价
+            BH_y += 1
+            sumCost += BeihuoJson[cargoNumber]['cost']
 
             # 插图
             imgUrl = BeihuoJson[cargoNumber]["productImgUrl"]
@@ -1855,6 +1925,40 @@ class Window:
             BH_y = 0
 
         sumCountX += 6
+
+        # 输出字体
+        priceStyle = BH_wb.add_format(
+            {
+                # "fg_color": "yellow",  # 单元格的背景颜色
+                "bold": 1,  # 字体加粗
+                "align": "left",  # 对齐方式
+                "valign": "vcenter",  # 字体对齐方式
+                "font_color": "red",  # 字体颜色
+            }
+        )
+        global global_OrderNum
+        writeStr = "订  单  数：" + str(global_OrderNum) + " 笔订单"
+        BH_sheet.merge_range(
+            "A" + str(sumCountX + 2) + ":D" + str(sumCountX + 2),
+            writeStr,
+            priceStyle,
+        )
+        writeStr = "快递费+盒子：" + str(round(global_OrderNum * 2.8, 2)) + " 元"
+        global_OrderNum = 0
+        BH_sheet.merge_range(
+            "A" + str(sumCountX + 3) + ":D" + str(sumCountX + 3),
+            writeStr,
+            priceStyle,
+        )
+
+        writeStr = "商品总成本：" + str(round(sumCost, 2)) + " 元"
+        global_OrderNum = 0
+        BH_sheet.merge_range(
+            "A" + str(sumCountX + 4) + ":D" + str(sumCountX + 4),
+            writeStr,
+            priceStyle,
+        )
+
 
         BH_wb.close()
 
