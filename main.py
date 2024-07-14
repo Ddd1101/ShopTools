@@ -1439,12 +1439,17 @@ class Window:
 
             # 多尺码序列化
             amount = ""
+            amount_with_price = ""
             for height in _list[6]:
                 if amount != "":
                     amount += "\n"
+
+                if amount_with_price != "":
+                    amount_with_price += "\n"
+
                 if isPrintUnitPrice:
-                    amount = (
-                        amount
+                    amount_with_price = (
+                        amount_with_price
                         + NumFormate4Print(height[0])
                         + " "
                         + str(height[1])
@@ -1452,16 +1457,15 @@ class Window:
                         + " "
                         + str(height[2])
                     )
-                else:
-                    amount = (
-                        amount
-                        + NumFormate4Print(height[0])
-                        + " "
-                        + str(height[1])
-                        + "件"
-                    )
+
+                amount = (
+                    amount + NumFormate4Print(height[0]) + " " + str(height[1]) + "件"
+                )
 
             BH_sheet.write(BH_x, BH_y, amount)
+            if amount_with_price:
+                BH_sheet.write(BH_x, BH_y + 3, amount_with_price)
+
             BH_y += 1
 
             # 多尺码标识
