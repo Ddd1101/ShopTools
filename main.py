@@ -200,9 +200,36 @@ def CalPriceLocation(_size):
     return _col
 
 
+def CalENCode(_size):
+    if _size[0] == "S" or _size[0] == "s":
+        return "S"
+
+    if _size[0] == "M" or _size[0] == "m":
+        return "M"
+
+    if _size[0] == "L" or _size[0] == "l":
+        return "L"
+
+    if _size[0] == "x" or _size[0] == "X":
+        if _size[1] == "L" or _size[1] == "l":
+            return "XL"
+        elif _size[1] == "x" or _size[1] == "X":
+            if _size[2] == "L" or _size[2] == "l":
+                return "XXL"
+            elif _size[2] == "x" or _size[2] == "X":
+                return "XXL"
+
+    return -1
+
+
 def CalPriceColByName(_size):
     _size = _size.upper()
+    if _size == "2XL":
+        _size = "XXL"
+    elif _size == "3XL":
+        _size = "XXXL"
     if _size[0] in en_code:
+        _size = CalENCode(_size)
         for col in range(worksheet.ncols):
             if worksheet.cell_value(0, col) == _size:
                 return col
