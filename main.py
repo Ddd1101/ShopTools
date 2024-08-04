@@ -42,21 +42,21 @@ AppKey = {
     "朝雄制衣厂": "4834884",
     "万盈饰品厂": "3527689",
     "义乌睿得": "3527689",
-    "义乌茜阳": "4834884"
+    "义乌茜阳": "4834884",
 }
 AppSecret = {
     "联球制衣厂": b"Zw5KiCjSnL",
     "朝雄制衣厂": b"JeV4khKJshr",
     "万盈饰品厂": b"Zw5KiCjSnL",
     "义乌睿得": b"Zw5KiCjSnL",
-    "义乌茜阳": b"JeV4khKJshr"
+    "义乌茜阳": b"JeV4khKJshr",
 }
 access_token = {
     "联球制衣厂": "999d182a-3576-4aee-97c5-8eeebce5e085",
     "朝雄制衣厂": "ef65f345-7060-4031-98ad-57d7d857f4d9",
     "万盈饰品厂": "cd62b5c5-00d1-41c9-becf-4f9dfcbf4b75",
     "义乌睿得": "7f813331-15d6-40a8-97ac-00589efc8e81",
-    "义乌茜阳": "a8de29c8-ff57-4336-b4e7-e1c3d1c72f34"
+    "义乌茜阳": "a8de29c8-ff57-4336-b4e7-e1c3d1c72f34",
 }
 
 # /ShopBackData/Common/GlobleDate - EnglishCode
@@ -1513,6 +1513,12 @@ class Window:
                     self.Logout("save ReadImageFromD net " + imageName)
 
             self.Logout("before insert_image", "debug")
+
+            width, height = Image.open(imageData).size
+
+            x_scale = (800 * 0.14) / width
+            y_scale = (800 * 0.14) / height
+
             BH_sheet.insert_image(
                 BH_x,
                 BH_y,
@@ -1520,8 +1526,8 @@ class Window:
                 {
                     "image_data": imageData,
                     "x_offset": 3,
-                    "x_scale": 0.14,
-                    "y_scale": 0.14,
+                    "x_scale": x_scale,
+                    "y_scale": y_scale,
                 },
             )
             self.Logout("after insert_image", "debug")
@@ -2082,6 +2088,12 @@ class Window:
                     ImageHandler.SaveImage(imageData.getvalue(), imageName)
 
             logging.debug("before insert img " + imageName)
+
+            width, height = Image.open(imageData).size
+
+            x_scale = (800 * 0.14) / width
+            y_scale = (800 * 0.14) / height
+
             BH_sheet.insert_image(
                 BH_x,
                 BH_y,
@@ -2089,8 +2101,8 @@ class Window:
                 {
                     "image_data": imageData,
                     "x_offset": 3,
-                    "x_scale": 0.14,
-                    "y_scale": 0.14,
+                    "x_scale": x_scale,
+                    "y_scale": y_scale,
                 },
             )
             logging.debug("end insert img " + imageName)
