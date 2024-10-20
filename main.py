@@ -2000,6 +2000,8 @@ class Window:
                 print("刷单")
                 continue
             for product_item in order["productItems"]:
+                if "refund" in product_item and product_item["refund"] > 0:
+                    continue
                 cargo_number_tag = (
                     "cargoNumber"
                     if "cargoNumber" in product_item
