@@ -27,7 +27,7 @@ import Common.ImageHandler as ImageHandler
 # Views
 from View.MenuSettingView import *
 
-import platform
+from PIL import Image
 
 os.environ["QT_MAC_WANTS_LAYER"] = "1"
 
@@ -40,6 +40,7 @@ os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = plugin_path
 AppKey = {
     "联球制衣厂": "3527689",
     "朝雄制衣厂": "4834884",
+    "朝瑞制衣厂": "4834884",
     "万盈饰品厂": "3527689",
     "义乌睿得": "3527689",
     "义乌茜阳": "4834884",
@@ -47,6 +48,7 @@ AppKey = {
 AppSecret = {
     "联球制衣厂": b"Zw5KiCjSnL",
     "朝雄制衣厂": b"JeV4khKJshr",
+    "朝瑞制衣厂": b"JeV4khKJshr",
     "万盈饰品厂": b"Zw5KiCjSnL",
     "义乌睿得": b"Zw5KiCjSnL",
     "义乌茜阳": b"JeV4khKJshr",
@@ -54,6 +56,7 @@ AppSecret = {
 access_token = {
     "联球制衣厂": "999d182a-3576-4aee-97c5-8eeebce5e085",
     "朝雄制衣厂": "ef65f345-7060-4031-98ad-57d7d857f4d9",
+    "朝瑞制衣厂": "438de82f-d44f-44f1-b343-4e0721b9e767",
     "万盈饰品厂": "cd62b5c5-00d1-41c9-becf-4f9dfcbf4b75",
     "义乌睿得": "7f813331-15d6-40a8-97ac-00589efc8e81",
     "义乌茜阳": "a8de29c8-ff57-4336-b4e7-e1c3d1c72f34",
@@ -434,6 +437,10 @@ def GetSingleTradeData(data, shopName):
     return response.json()
 
 
+def GetRefundBill():
+    pass
+
+
 # 获取订单号列表
 # 筛除刷单
 def GetOrderBill2(
@@ -569,9 +576,10 @@ class Window:
         self.ui.priceTablePathButton.clicked.connect(self.CheckPriceTablePath)
 
         # self.ui.shopName.addItem("万盈饰品厂")
-        self.ui.shopName.addItem("联球制衣厂+朝雄制衣厂")
+        self.ui.shopName.addItem("联球制衣厂+朝雄制衣厂+朝瑞制衣厂")
         self.ui.shopName.addItem("联球制衣厂")
         self.ui.shopName.addItem("朝雄制衣厂")
+        self.ui.shopName.addItem("朝瑞制衣厂")
 
         self.ui.Tag.addItem("无")
         self.ui.Tag.addItem("红")
@@ -1034,7 +1042,6 @@ class Window:
                         "needMemoInfo": "true",
                     }
                     response = GetTradeData(data, shopName)
-
                     if (
                         orderstatus == "waitsellersend"
                         or orderstatus == "waitbuyerreceive"
@@ -1996,7 +2003,9 @@ class Window:
                     if "cargoNumber" in product_item
                     else "productCargoNumber"
                 )
-                cargo_number = product_item[cargo_number_tag]
+                cargo_number = ""
+                if cargo_number_tag in product_item:
+                    cargo_number = product_item[cargo_number_tag]
                 if "skuInfos" not in product_item:
                     color = "无sku"
                 else:
