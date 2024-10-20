@@ -1,13 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-'''
+"""
 @Project ：ShopTools
 @Author  ：Ddd
 @Date    ：2023/8/13 19:05 
-'''
+"""
 from PySide2.QtCore import QFile, Qt
 from PySide2.QtUiTools import QUiLoader
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QDialog, QMessageBox
+from PySide2.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QDialog,
+    QMessageBox,
+)
 import yaml
 
 
@@ -27,8 +35,8 @@ class MenuSettingView(QDialog):
 
         layout = QVBoxLayout()
 
-        for shop in config['shops']:
-            label = QLabel(shop['name'], self)
+        for shop in config["shops"]:
+            label = QLabel(shop["name"], self)
             line_edit = QLineEdit(self)
 
             layout.addWidget(label)
@@ -37,17 +45,20 @@ class MenuSettingView(QDialog):
         self.setLayout(layout)
         self.setAttribute(Qt.WA_DeleteOnClose)
 
-
-        print(config['shops'])
-        print(len(config['shops']))
+        print(config["shops"])
+        print(len(config["shops"]))
 
     def closeEvent(self, event):
         # 这是窗口关闭时调用的方法
 
         # 示例: 询问用户是否确定关闭
-        reply = QMessageBox.question(self, 'Message',
-                                     "Are you sure you want to close?", QMessageBox.Yes | QMessageBox.No,
-                                     QMessageBox.No)
+        reply = QMessageBox.question(
+            self,
+            "Message",
+            "Are you sure you want to close?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
 
         if reply == QMessageBox.Yes:
             event.accept()
