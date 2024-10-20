@@ -588,9 +588,9 @@ class Window:
         self.ui.Tag.addItem("黄")
         self.ui.Tag.addItem("按单号")
 
+        self.ui.orderStatus.addItem("待发货")
         self.ui.orderStatus.addItem("已发货")
         self.ui.orderStatus.addItem("待发货 + 已发货")
-        self.ui.orderStatus.addItem("待发货")
         self.ui.orderStatus.addItem("待付款")
         self.ui.orderStatus.addItem("历史订单")
 
@@ -1330,6 +1330,8 @@ class Window:
                 continue
 
             for product_item in order["productItems"]:
+                if "refund" in product_item and product_item["refund"] > 0:
+                    continue
                 cargo_number_tag = (
                     "cargoNumber"
                     if "cargoNumber" in product_item
