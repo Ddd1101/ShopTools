@@ -1,0 +1,3 @@
+[submodule "ShopBackData"]
+	path = ShopBackData
+	url = https://github.com/Ddd1101/ShopBackData.git

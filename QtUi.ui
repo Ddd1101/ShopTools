@@ -260,7 +260,7 @@
   <widget class="QPushButton" name="commit">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>40</x>
      <y>440</y>
      <width>111</width>
      <height>31</height>
@@ -358,6 +358,9 @@
    <property name="text">
     <string>打印本厂订单</string>
    </property>
+   <property name="autoExclusive">
+    <bool>false</bool>
+   </property>
   </widget>
   <widget class="QDateTimeEdit" name="deleveredStartTime">
    <property name="geometry">
@@ -409,6 +412,9 @@
    <property name="text">
     <string>是否限制发货时间</string>
    </property>
+   <property name="autoExclusive">
+    <bool>false</bool>
+   </property>
   </widget>
   <widget class="QDateTimeEdit" name="deleveredEndTime">
    <property name="geometry">
@@ -459,7 +465,7 @@
   <widget class="QPushButton" name="commit_2">
    <property name="geometry">
     <rect>
-     <x>290</x>
+     <x>190</x>
      <y>440</y>
      <width>111</width>
      <height>31</height>
@@ -472,6 +478,24 @@
    </property>
    <property name="text">
     <string>核算成本</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="checkDelivery">
+   <property name="geometry">
+    <rect>
+     <x>340</x>
+     <y>440</y>
+     <width>111</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>异常物流检测</string>
    </property>
   </widget>
  </widget>
