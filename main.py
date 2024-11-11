@@ -588,6 +588,10 @@ class Window:
         self.ui.Tag.addItem("黄")
         self.ui.Tag.addItem("按单号")
 
+        self.ui.filter.addItem("无")
+        self.ui.filter.addItem("红")
+        self.ui.filter.addItem("黄")
+
         self.ui.orderStatus.addItem("已发货")
         self.ui.orderStatus.addItem("待发货 + 已发货")
         self.ui.orderStatus.addItem("待发货")
@@ -625,6 +629,7 @@ class Window:
         self.shopId = self.ui.shopName.currentIndex() + 1
         self.shopName = self.ui.shopName.currentText()
         self.mode = self.ui.Tag.currentIndex()
+        self.filter = self.ui.filter.currentIndex()
 
         self.orderStatus = self.ui.orderStatus.currentIndex()
 
@@ -784,6 +789,7 @@ class Window:
         self.shopId = self.ui.shopName.currentIndex() + 1
         self.shopName = self.ui.shopName.currentText()
         self.mode = self.ui.Tag.currentIndex()
+        self.filter = self.ui.filter.currentIndex()
 
         self.orderStatus = self.ui.orderStatus.currentIndex()
 
@@ -818,8 +824,9 @@ class Window:
         self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
         self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
 
-        self.Logout2("# 店铺名 ：" + self.shopName)
-        self.Logout2("# 色标 ：" + self.ui.Tag.currentText())
+        self.Logout2("# 店 铺 名 ：" + self.shopName)
+        self.Logout2("# 色    标 ：" + self.ui.Tag.currentText())
+        self.Logout2("# 过滤色标 ：" + self.ui.filter.currentText())
         self.Logout2(
             "# 订单开始时间 ：" + self.ui.startTime.date().toString("yyyy-MM-dd")
         )
@@ -847,6 +854,7 @@ class Window:
                 (
                     self.shopName,
                     int(self.mode),
+                    int(self.filter),
                     self.createStartTime,
                     self.createEndTime,
                     self.orderStatus,
@@ -888,6 +896,7 @@ class Window:
         self,
         shopName,
         mode,
+        filter,
         createStartTime,
         createEndTime,
         orderStatus,
@@ -905,10 +914,8 @@ class Window:
         if mode == 5:
             orderId = 0
             if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
-                print(self.ui.AliAccessorOrderId.toPlainText())
                 orderId = int(self.ui.orderId.toPlainText())
             elif shopType == SHOPTYPE_ALI_ACCESSOR:
-                print(self.ui.AliAccessorOrderId.toPlainText())
                 orderId = int(self.ui.AliAccessorOrderId.toPlainText())
             self.order = self.GetSingleOrder(
                 shopName, orderId, isPrintOwn, isPrintUnitPrice
@@ -921,6 +928,7 @@ class Window:
                 shopName,
                 isPrintOwn,
                 mode,
+                filter,
                 limitDeliveredTime,
                 isPrintUnitPrice,
                 shopType,
@@ -933,6 +941,7 @@ class Window:
                 shopName,
                 isPrintOwn,
                 mode,
+                filter,
                 limitDeliveredTime,
                 isPrintUnitPrice,
                 shopType,
@@ -945,6 +954,7 @@ class Window:
                 shopName,
                 isPrintOwn,
                 mode,
+                filter,
                 limitDeliveredTime,
                 isPrintUnitPrice,
                 shopType,
@@ -957,6 +967,7 @@ class Window:
                 shopName,
                 isPrintOwn,
                 mode,
+                filter,
                 limitDeliveredTime,
                 isPrintUnitPrice,
                 shopType,
@@ -975,6 +986,7 @@ class Window:
                 shopName,
                 isPrintOwn,
                 mode,
+                filter,
                 limitDeliveredTime,
                 isPrintUnitPrice,
                 shopType,
@@ -998,6 +1010,7 @@ class Window:
         shopNameStr,
         isPrintOwn,
         mode=0,
+        filter=0,
         limitDeliveredTime={},
         isPrintUnitPrice=False,
         shopType=SHOPTYPE_ALI_CHILD_CLOTH,
@@ -1052,14 +1065,23 @@ class Window:
                                 or order["baseInfo"]["sellerRemarkIcon"] == "3"
                             ):
                                 continue
-                            # elif (
-                            #     mode != 0
-                            #     and "sellerRemarkIcon" not in order["baseInfo"]
-                            # ):
-                            #     if mode == 1:
-                            #         order["baseInfo"]["sellerRemarkIcon"] = "1"
-                            #     elif mode == 4:
-                            #         order["baseInfo"]["sellerRemarkIcon"] = "4"
+
+                            # 过滤红/黄标签
+                            if "sellerRemarkIcon" in order["baseInfo"]:
+                                # 过滤红标签
+                                if (
+                                    filter == 1
+                                    and order["baseInfo"]["sellerRemarkIcon"] == "1"
+                                ):
+                                    print("过滤红标签")
+                                    continue
+                                # 过滤黄标签
+                                if (
+                                    filter == 2
+                                    and order["baseInfo"]["sellerRemarkIcon"] == "4"
+                                ):
+                                    print("过滤黄标签")
+                                    continue
 
                     orderListRaw += response["result"]
 
@@ -1962,6 +1984,7 @@ class Window:
                 (
                     self.shopName,
                     int(self.mode),
+                    0,
                     self.createStartTime,
                     self.createEndTime,
                     self.orderStatus,
