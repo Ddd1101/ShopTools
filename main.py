@@ -358,7 +358,12 @@ def GetTradeData(data, shopName):
     )
     try:
         time.sleep(0.2)
+        print("+++++++++++++++++++++++")
+        print(url)
+        print(data)
         response = requests.post(url, data=data)
+        print("===============================")
+        print(response.json())
     except Exception as e:
         print("post error ", e)
 
@@ -1104,7 +1109,21 @@ class Window:
                             else:
                                 orderList.append(order)
                 else:
-                    orderList += orderListRaw
+                    for order in orderListRaw:
+                        # 过滤黄标签
+                        if "sellerRemarkIcon" in order["baseInfo"]:
+                            if (
+                                filter == 2
+                                and order["baseInfo"]["sellerRemarkIcon"] == "4"
+                            ):
+                                print("过滤黄标签")
+                                continue
+                            else:
+                                orderList.append(order)
+                        else:
+                            orderList.append(order)
+
+                    # orderList += orderListRaw
 
                 orderListRaw.clear()
 
