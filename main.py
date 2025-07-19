@@ -243,8 +243,28 @@ def CalPriceColByName(_size):
     return -1
 
 
-def GetCost(cargoNumber, skuInfosValue, colNum=0):
+def CalCargoNum4ERP(cargoNumber):
+    if cargoNumber == "":
+        return cargoNumber
+    value_list = cargoNumber.split("-")
+    res = cargoNumber
+    list_len = len(value_list)
+    if list_len == 1:  # 240023
+        res = cargoNumber
+    elif list_len == 2:
+        if value_list[0].isdigit():  # 240003-2
+            res = value_list[0]
+        else:
+            res = cargoNumber  # TZ-240003
+    elif list_len == 3:
+        res = value_list[0] + "-" + value_list[1]
+    return res
+
+
+def GetCost(cargoNumber_, skuInfosValue, colNum=0):
     global worksheet
+    cargoNumber = CalCargoNum4ERP(cargoNumber_)
+    # 货号适配ERP
     if worksheet == None:
         worksheet = GetPriceGrid()
     if global_SHOPTYPE == SHOPTYPE_ALI_CHILD_CLOTH:
@@ -293,7 +313,8 @@ def GetCost(cargoNumber, skuInfosValue, colNum=0):
 
 
 # 由货号得到产品名 - 厂家地址 - 厂家名
-def GetAdressAndShopName(cargoNumber):
+def GetAdressAndShopName(cargoNumber_):
+    cargoNumber = CalCargoNum4ERP(cargoNumber_)
     rowIndex = -1
     for t in range(1, worksheet.nrows):
         value = worksheet.cell(t, 0).value
@@ -358,12 +379,7 @@ def GetTradeData(data, shopName):
     )
     try:
         time.sleep(0.2)
-        print("+++++++++++++++++++++++")
-        print(url)
-        print(data)
         response = requests.post(url, data=data)
-        print("===============================")
-        print(response.json())
     except Exception as e:
         print("post error ", e)
 
