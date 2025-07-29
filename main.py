@@ -244,26 +244,25 @@ def CalPriceColByName(_size):
 
 
 def CalCargoNum4ERP(cargoNumber):
-    if cargoNumber == "":
-        return cargoNumber
-    value_list = cargoNumber.split("-")
-    res = cargoNumber
-    list_len = len(value_list)
-    if list_len == 1:  # 240023
-        res = cargoNumber
-    elif list_len == 2:
-        if value_list[0].isdigit():  # 240003-2
-            res = value_list[0]
-        else:
-            res = cargoNumber  # TZ-240003
-    elif list_len == 3:
-        res = value_list[0] + "-" + value_list[1]
-    return res
+    import re
+
+    # 使用正则表达式分割货号（按非字母数字字符分割，但保留字母数字组合）
+    pattern = r"[^\w]|_|-"  # 匹配任何非单词字符或下划线（用于分割）
+    all_segments = []
+    # 分割并过滤空字符串
+    segments = [seg for seg in re.split(pattern, cargoNumber) if seg]
+
+    # 找到长度最长的段（如果有多个相同长度，取第一个出现的）
+    longest_segment = max(segments, key=len, default="")
+
+    if len(cargoNumber) > 0 and cargoNumber[0] == "T":
+        longest_segment = "TZ-" + longest_segment
+
+    return longest_segment
 
 
-def GetCost(cargoNumber_, skuInfosValue, colNum=0):
+def GetCost(cargoNumber, skuInfosValue, colNum=0):
     global worksheet
-    cargoNumber = CalCargoNum4ERP(cargoNumber_)
     # 货号适配ERP
     if worksheet == None:
         worksheet = GetPriceGrid()
@@ -313,8 +312,7 @@ def GetCost(cargoNumber_, skuInfosValue, colNum=0):
 
 
 # 由货号得到产品名 - 厂家地址 - 厂家名
-def GetAdressAndShopName(cargoNumber_):
-    cargoNumber = CalCargoNum4ERP(cargoNumber_)
+def GetAdressAndShopName(cargoNumber):
     rowIndex = -1
     for t in range(1, worksheet.nrows):
         value = worksheet.cell(t, 0).value
@@ -1399,6 +1397,8 @@ class Window:
                 height = product_item["skuInfos"][1]["value"]
 
                 cargo_number = cargo_number.split("【")[-1]
+
+                cargo_number = CalCargoNum4ERP(cargo_number)
 
                 product_dict = beihuo_json.setdefault(cargo_number, {}).setdefault(
                     color,
