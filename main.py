@@ -440,7 +440,9 @@ def GetDeliveryTraceData(data, shopName):
 def GetSingleTradeData(data, shopName):
     data["access_token"] = access_token[shopName]
     _aop_signature = CalculateSignature(
-        request_type["trade"] + "alibaba.trade.get.sellerView/" + AppKey[shopName],
+        request_type["trade"]
+        + "alibaba.trade.ec.getOrder.sellerView/"
+        + AppKey[shopName],
         data,
         shopName,
     )
@@ -448,7 +450,7 @@ def GetSingleTradeData(data, shopName):
     url = (
         base_url
         + request_type["trade"]
-        + "alibaba.trade.get.sellerView/"
+        + "alibaba.trade.ec.getOrder.sellerView/"
         + AppKey[shopName]
     )
     response = requests.post(url, data=data)
