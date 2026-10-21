@@ -27,6 +27,7 @@ import Common.ImageHandler as ImageHandler
 
 # Views
 from View.MenuSettingView import *
+from View.MainWindow import MainWindow
 
 from PIL import Image
 
@@ -562,11 +563,8 @@ class Window:
     def __init__(self):
         super(Window, self).__init__()
 
-        # 从文件中加载UI定义
-        qfile = QFile("Main.ui")
-        qfile.open(QFile.ReadOnly)
-        qfile.close()
-        self.ui = QUiLoader().load(qfile)
+        # 从代码构建 UI（纯代码布局）
+        self.ui = MainWindow()
 
         # 日志输出：通过信号把日志跨线程投递到主线程，实时刷新界面
         self._logEmitter = LogEmitter()
@@ -831,17 +829,29 @@ class Window:
     def click_window2(self):
         QDesktopServices.openUrl(QUrl(self.errorUrl))
 
-    def CheckPriceTablePath(self):
+    def _choose_file(self, widget):
         filePath = QFileDialog.getOpenFileName(
             QMainWindow(), "选择文件"
-        )  # 选择目录，返回选中的路径
-        self.ui.priceTablePath.setText(filePath[0])
+        )  # 选择文件，返回选中的路径
+        widget.setText(filePath[0])
 
-    def CheckSaveFilePath(self):
+    def _choose_dir(self, widget):
         FileDirectory = QFileDialog.getExistingDirectory(
             QMainWindow(), "选择文件夹"
-        )  # 选择目录，返回选中的路径
-        self.ui.saveFilePath.setText(FileDirectory)
+        )  # 选择文件夹，返回选中的路径
+        widget.setText(FileDirectory)
+
+    def CheckPriceTablePath(self):
+        self._choose_file(self.ui.priceTablePath)
+
+    def CheckSaveFilePath(self):
+        self._choose_dir(self.ui.saveFilePath)
+
+    def CheckAliAccessorPriceTablePath(self):
+        self._choose_file(self.ui.AliAccessorPriceTablePath)
+
+    def CheckAliAccessorSaveFilePath(self):
+        self._choose_dir(self.ui.AliAccessorSaveFilePath)
 
     def CheckAllParams(self):
         self.Logout("start CheckAllParams", "debug")
@@ -964,9 +974,9 @@ class Window:
         if mode == 5:
             orderId = 0
             if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
-                orderId = int(self.ui.orderId.toPlainText())
+                orderId = int(self.ui.orderId.text())
             elif shopType == SHOPTYPE_ALI_ACCESSOR:
-                orderId = int(self.ui.AliAccessorOrderId.toPlainText())
+                orderId = int(self.ui.AliAccessorOrderId.text())
             self.order = self.GetSingleOrder(
                 shopName, orderId, isPrintOwn, isPrintUnitPrice
             )
@@ -1503,7 +1513,7 @@ class Window:
         BeihuoTable.sort(key=lambda x: [x[1], x[2]])
 
         # 写表
-        savePath = self.ui.saveFilePath.toPlainText().split(".")[0]
+        savePath = self.ui.saveFilePath.text().split(".")[0]
 
         # 保存备货单
         BH_wb = xlsxwriter.Workbook(
@@ -1886,7 +1896,9 @@ class Window:
         )
 
         self.ui.AliAccessorPriceTablePath.setText("price.xlsx")
-        self.ui.priceTablePathButton.clicked.connect(self.CheckPriceTablePath)
+        self.ui.AliAccessorPriceTablePathButton.clicked.connect(
+            self.CheckAliAccessorPriceTablePath
+        )
 
         self.ui.AliAccessorShopName.addItem("万盈饰品厂")
         self.ui.AliAccessorShopName.addItem("义乌睿得")
@@ -1922,7 +1934,9 @@ class Window:
         self.calStartTime = datetime.now()
 
         self.ui.AliAccessorSaveFilePath.setText("备货单")
-        self.ui.AliAccessorSaveFilePathButton.clicked.connect(self.CheckSaveFilePath)
+        self.ui.AliAccessorSaveFilePathButton.clicked.connect(
+            self.CheckAliAccessorSaveFilePath
+        )
 
         # 物流检查按钮
         self.ui.AliAccessorCheckDelivery.clicked.connect(self.CheckDelivery)
@@ -2128,7 +2142,7 @@ class Window:
             BeihuoList.append(item)
 
         # 写表
-        savePath = self.ui.saveFilePath.toPlainText().split(".")[0]
+        savePath = self.ui.AliAccessorSaveFilePath.text().split(".")[0]
 
         # 保存备货单
         BH_wb = xlsxwriter.Workbook(

@@ -10,7 +10,6 @@ a = Analysis(
     binaries=[],
     datas=[('F:\\workplace_python\\ShopTools\\images\\*','images'),
             ('F:\\workplace_python\\ShopTools\\price.xlsx','.'),
-            ('F:\\workplace_python\\ShopTools\\Main.ui','.'),
             ('F:\\workplace_python\\ShopTools\\QtUi.ui','.')],
     hiddenimports=[],
     hookspath=[],
