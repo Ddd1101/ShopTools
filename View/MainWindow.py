@@ -319,8 +319,8 @@ class MainWindow(QMainWindow):
         self.costomLogging.setReadOnly(True)
         splitter.addWidget(self.costomLogging)
 
-        splitter.setStretchFactor(0, 3)
-        splitter.setStretchFactor(1, 2)
+        splitter.setStretchFactor(0, 1)
+        splitter.setStretchFactor(1, 1)
 
         # 把两个 Tab 内已命名的控件提升到 MainWindow 属性，
         # 使 self.ui.XXX 的访问语义与旧 QUiLoader 结果一致。
