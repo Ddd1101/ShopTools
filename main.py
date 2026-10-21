@@ -6,6 +6,7 @@ from PySide2.QtCore import QDate, QDateTime, QTime, QUrl
 from PySide2.QtGui import QDesktopServices
 
 import os
+import sys
 from datetime import datetime, date, timedelta
 import xlsxwriter
 import io
@@ -528,6 +529,35 @@ def GetOrderBill2(
 # pass
 
 
+class LogEmitter(QtCore.QObject):
+    """跨线程日志信号：工作线程 emit，主线程负责刷新界面日志框。"""
+
+    message = QtCore.Signal(str)
+
+
+class _TeeStream:
+    """把写到 stdout/stderr 的内容实时转发到界面日志框（同时保留原终端输出）。"""
+
+    def __init__(self, emitter, original):
+        self._emitter = emitter
+        self._original = original
+
+    def write(self, text):
+        if self._original is not None:
+            self._original.write(text)
+            self._original.flush()
+        msg = text.rstrip("\r\n")
+        if msg:
+            self._emitter.message.emit(msg)
+
+    def flush(self):
+        if self._original is not None:
+            self._original.flush()
+
+    def __getattr__(self, name):
+        return getattr(self._original, name)
+
+
 class Window:
     def __init__(self):
         super(Window, self).__init__()
@@ -537,6 +567,17 @@ class Window:
         qfile.open(QFile.ReadOnly)
         qfile.close()
         self.ui = QUiLoader().load(qfile)
+
+        # 日志输出：通过信号把日志跨线程投递到主线程，实时刷新界面
+        self._logEmitter = LogEmitter()
+        self._logEmitter.message.connect(self.ui.costomLogging.append)
+
+        # 是否把 debug 日志输出到界面日志框（默认关闭）
+        self.isPrintDebug = False
+
+        # 把终端 print/异常输出实时转发到界面日志框
+        sys.stdout = _TeeStream(self._logEmitter, sys.stdout)
+        sys.stderr = _TeeStream(self._logEmitter, sys.stderr)
 
         ## 菜单
         menuBar = self.ui.menuBar()
@@ -844,6 +885,7 @@ class Window:
 
         self.isPrintOwn = self.ui.IsPrintOwn.isChecked()
         self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
+        self.isPrintDebug = self.ui.DebugLogOutput.isChecked()
 
         self.Logout2("# 店 铺 名 ：" + self.shopName)
         self.Logout2("# 色    标 ：" + self.ui.Tag.currentText())
@@ -891,27 +933,14 @@ class Window:
             self.Logout("Error: 无法计算启动线程")
 
     def Logout(self, text, type="info"):
-        # if type == 'info':
-        #     # logging.debug(text)
-        #     pass
-        # elif type == 'debug':
-        #     logging.debug(text)
-
+        """写入文件日志；非 debug 级别的信息同时实时输出到界面日志框。"""
         logging.info(text)
-        # print(text)
-        # self.ui.costomLogging.append(text)
+        if type != "debug" or self.isPrintDebug:
+            self._logEmitter.message.emit(text)
 
     def Logout2(self, text, type="info"):
-        # if type == 'info':
-        #     # logging.debug(text)
-        #     pass
-        # elif type == 'debug':
-        #     logging.debug(text)
-
-        # logging.debug(text)
-        # print(text)
-        self.ui.costomLogging.append(text)
-        # pass
+        """兼容旧调用：实时输出到界面日志框。"""
+        self._logEmitter.message.emit(text)
 
     def OrderList(
         self,
@@ -1990,6 +2019,7 @@ class Window:
 
         self.isPrintOwn = self.ui.AliAccessorIsPrintOwn.isChecked()
         self.isPrintUnitPrice = self.ui.AliAccessorIsPrintUnitPrice.isChecked()
+        self.isPrintDebug = self.ui.DebugLogOutput.isChecked()
 
         self.Logout2("# 店铺名 ：" + self.shopName)
         self.Logout2("# 色标 ：" + self.ui.AliAccessorTag.currentText())
