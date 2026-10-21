@@ -7,6 +7,7 @@ from PySide2.QtGui import QDesktopServices
 
 import os
 import sys
+import traceback
 from datetime import datetime, date, timedelta
 import xlsxwriter
 import io
@@ -754,7 +755,7 @@ class Window:
 
         try:
             _thread.start_new_thread(
-                self.DoCheckDelivery,
+                self._run_check_delivery,
                 (
                     self.createStartTime,
                     self.createEndTime,
@@ -833,7 +834,6 @@ class Window:
 
         self.Logout2("# 超时订单检测完成 ")
         self.Logout("end DoCheckDelivery", "debug")
-        self._is_running = False
 
         return deliveryErrorList
 
@@ -945,7 +945,7 @@ class Window:
         self._is_running = True
         try:
             _thread.start_new_thread(
-                self.OrderList,
+                self._run_order_list,
                 (
                     self.shopName,
                     int(self.mode),
@@ -973,6 +973,26 @@ class Window:
     def Logout2(self, text, type="info"):
         """兼容旧调用：实时输出到界面日志框。"""
         self._logEmitter.message.emit(text)
+
+    def _run_order_list(self, *args):
+        try:
+            self.OrderList(*args)
+        except Exception:
+            traceback.print_exc()
+            err = traceback.format_exc().strip().splitlines()[-1]
+            self.Logout2("# 任务中断：" + err + "，可重新启动")
+        finally:
+            self._is_running = False
+
+    def _run_check_delivery(self, *args):
+        try:
+            self.DoCheckDelivery(*args)
+        except Exception:
+            traceback.print_exc()
+            err = traceback.format_exc().strip().splitlines()[-1]
+            self.Logout2("# 任务中断：" + err + "，可重新启动")
+        finally:
+            self._is_running = False
 
     def OrderList(
         self,
@@ -1083,7 +1103,6 @@ class Window:
         # self.ui.output.append("# 统计完成 \n")
         self.Logout2("# 统计完成 \n")
         self.Logout2("#################################################")
-        self._is_running = False
 
     def GetOrderBill(
         self,
@@ -2092,7 +2111,7 @@ class Window:
         self._is_running = True
         try:
             _thread.start_new_thread(
-                self.OrderList,
+                self._run_order_list,
                 (
                     self.shopName,
                     int(self.mode),
