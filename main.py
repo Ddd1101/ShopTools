@@ -531,9 +531,10 @@ def GetOrderBill2(
 
 
 class LogEmitter(QtCore.QObject):
-    """跨线程日志信号：工作线程 emit，主线程负责刷新界面日志框。"""
+    """跨线程信号：message 刷新日志框；openUrlRequested 在主线程打开浏览器。"""
 
     message = QtCore.Signal(str)
+    openUrlRequested = QtCore.Signal(str)
 
 
 class _TeeStream:
@@ -569,9 +570,14 @@ class Window:
         # 日志输出：通过信号把日志跨线程投递到主线程，实时刷新界面
         self._logEmitter = LogEmitter()
         self._logEmitter.message.connect(self.ui.costomLogging.append)
+        # 打开浏览器只在主线程执行，避免工作线程直接操作 Qt 导致闪退
+        self._logEmitter.openUrlRequested.connect(self._open_url)
 
         # 是否把 debug 日志输出到界面日志框（默认关闭）
         self.isPrintDebug = False
+
+        # 防止低配机器上重复点击导致的并发任务（内存/线程耗尽）
+        self._is_running = False
 
         # 把终端 print/异常输出实时转发到界面日志框
         sys.stdout = _TeeStream(self._logEmitter, sys.stdout)
@@ -741,6 +747,10 @@ class Window:
     # 异常物流检测
     def CheckDelivery(self):
         self.CheckAllParams()
+        if self._is_running:
+            self.Logout2("已有任务在运行，请稍候再试")
+            return
+        self._is_running = True
 
         try:
             _thread.start_new_thread(
@@ -823,11 +833,15 @@ class Window:
 
         self.Logout2("# 超时订单检测完成 ")
         self.Logout("end DoCheckDelivery", "debug")
+        self._is_running = False
 
         return deliveryErrorList
 
     def click_window2(self):
         QDesktopServices.openUrl(QUrl(self.errorUrl))
+
+    def _open_url(self, url):
+        QDesktopServices.openUrl(QUrl(url))
 
     def _choose_file(self, widget):
         filePath = QFileDialog.getOpenFileName(
@@ -897,6 +911,10 @@ class Window:
         self.isPrintUnitPrice = self.ui.IsPrintUnitPrice.isChecked()
         self.isPrintDebug = self.ui.DebugLogOutput.isChecked()
 
+        # 主线程预取界面值供工作线程使用，避免跨线程访问 Qt 控件导致闪退
+        self._orderIdText = self.ui.orderId.text()
+        self._savePath = self.ui.saveFilePath.text().split(".")[0]
+
         self.Logout2("# 店 铺 名 ：" + self.shopName)
         self.Logout2("# 色    标 ：" + self.ui.Tag.currentText())
         self.Logout2("# 过滤色标 ：" + self.ui.filter.currentText())
@@ -921,6 +939,10 @@ class Window:
 
     def CalculateBeiHuoTable(self):
         self.CheckAllParams()
+        if self._is_running:
+            self.Logout2("已有任务在运行，请稍候再试")
+            return
+        self._is_running = True
         try:
             _thread.start_new_thread(
                 self.OrderList,
@@ -974,9 +996,9 @@ class Window:
         if mode == 5:
             orderId = 0
             if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
-                orderId = int(self.ui.orderId.text())
+                orderId = int(self._orderIdText)
             elif shopType == SHOPTYPE_ALI_ACCESSOR:
-                orderId = int(self.ui.AliAccessorOrderId.text())
+                orderId = int(self._aliAccessorOrderIdText)
             self.order = self.GetSingleOrder(
                 shopName, orderId, isPrintOwn, isPrintUnitPrice
             )
@@ -1061,6 +1083,7 @@ class Window:
         # self.ui.output.append("# 统计完成 \n")
         self.Logout2("# 统计完成 \n")
         self.Logout2("#################################################")
+        self._is_running = False
 
     def GetOrderBill(
         self,
@@ -1513,7 +1536,7 @@ class Window:
         BeihuoTable.sort(key=lambda x: [x[1], x[2]])
 
         # 写表
-        savePath = self.ui.saveFilePath.text().split(".")[0]
+        savePath = self._savePath
 
         # 保存备货单
         BH_wb = xlsxwriter.Workbook(
@@ -1855,7 +1878,7 @@ class Window:
 
             if self.errorUrl != url:
                 self.errorUrl = url
-                QDesktopServices.openUrl(QUrl(self.errorUrl))
+                self._logEmitter.openUrlRequested.emit(self.errorUrl)
 
             # picData = urllib.request.urlopen(url)
 
@@ -2035,6 +2058,10 @@ class Window:
         self.isPrintUnitPrice = self.ui.AliAccessorIsPrintUnitPrice.isChecked()
         self.isPrintDebug = self.ui.DebugLogOutput.isChecked()
 
+        # 主线程预取界面值供工作线程使用，避免跨线程访问 Qt 控件导致闪退
+        self._aliAccessorOrderIdText = self.ui.AliAccessorOrderId.text()
+        self._aliAccessorSavePath = self.ui.AliAccessorSaveFilePath.text().split(".")[0]
+
         self.Logout2("# 店铺名 ：" + self.shopName)
         self.Logout2("# 色标 ：" + self.ui.AliAccessorTag.currentText())
         self.Logout2(
@@ -2059,6 +2086,10 @@ class Window:
     def AliAccessorCalculateBeiHuoTable(self):
         self.Logout("AliAccessorCalculateBeiHuoTable", "debug")
         self.AliAccessorCheckAllParams()
+        if self._is_running:
+            self.Logout2("已有任务在运行，请稍候再试")
+            return
+        self._is_running = True
         try:
             _thread.start_new_thread(
                 self.OrderList,
@@ -2142,7 +2173,7 @@ class Window:
             BeihuoList.append(item)
 
         # 写表
-        savePath = self.ui.AliAccessorSaveFilePath.text().split(".")[0]
+        savePath = self._aliAccessorSavePath
 
         # 保存备货单
         BH_wb = xlsxwriter.Workbook(
