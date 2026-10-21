@@ -531,11 +531,16 @@ def GetOrderBill2(
 # pass
 
 
+class TaskInterrupted(Exception):
+    """手动中断任务时抛出，用于跳出工作线程中的循环。"""
+
+
 class LogEmitter(QtCore.QObject):
-    """跨线程信号：message 刷新日志框；openUrlRequested 在主线程打开浏览器。"""
+    """跨线程信号：message 刷新日志框；openUrlRequested 在主线程打开浏览器；runningChanged 通知按钮可用态。"""
 
     message = QtCore.Signal(str)
     openUrlRequested = QtCore.Signal(str)
+    runningChanged = QtCore.Signal(bool)
 
 
 class _TeeStream:
@@ -573,12 +578,14 @@ class Window:
         self._logEmitter.message.connect(self.ui.costomLogging.append)
         # 打开浏览器只在主线程执行，避免工作线程直接操作 Qt 导致闪退
         self._logEmitter.openUrlRequested.connect(self._open_url)
+        self._logEmitter.runningChanged.connect(self._set_running_ui)
 
         # 是否把 debug 日志输出到界面日志框（默认关闭）
         self.isPrintDebug = False
 
         # 防止低配机器上重复点击导致的并发任务（内存/线程耗尽）
         self._is_running = False
+        self._cancel_requested = False
 
         # 把终端 print/异常输出实时转发到界面日志框
         sys.stdout = _TeeStream(self._logEmitter, sys.stdout)
@@ -594,6 +601,11 @@ class Window:
         self.AliChildClothInit()
 
         self.AliAccessorInit()
+
+        # 手动中断按钮 + 初始化按钮可用态
+        self.ui.interrupt.clicked.connect(self._interrupt_task)
+        self.ui.AliAccessorInterrupt.clicked.connect(self._interrupt_task)
+        self._set_running_ui(False)
 
     def AliChildClothInit(self):
         # 订单时间
@@ -751,7 +763,7 @@ class Window:
         if self._is_running:
             self.Logout2("已有任务在运行，请稍候再试")
             return
-        self._is_running = True
+        self._set_started()
 
         try:
             _thread.start_new_thread(
@@ -810,6 +822,7 @@ class Window:
         # 2. 查询物流跟踪信息
         self.Logout2("2. 查询物流跟踪信息")
         for orderId in orderIdList:
+            self._check_cancel()
             data = {"orderId": int(orderId), "webSite": "1688"}
             response = GetDeliveryTraceData(data, shopName)
             if "errorMessage" in response:
@@ -942,7 +955,7 @@ class Window:
         if self._is_running:
             self.Logout2("已有任务在运行，请稍候再试")
             return
-        self._is_running = True
+        self._set_started()
         try:
             _thread.start_new_thread(
                 self._run_order_list,
@@ -977,22 +990,52 @@ class Window:
     def _run_order_list(self, *args):
         try:
             self.OrderList(*args)
+        except TaskInterrupted:
+            self.Logout2("# 任务已手动中断")
         except Exception:
             traceback.print_exc()
             err = traceback.format_exc().strip().splitlines()[-1]
             self.Logout2("# 任务中断：" + err + "，可重新启动")
         finally:
-            self._is_running = False
+            self._set_stopped()
 
     def _run_check_delivery(self, *args):
         try:
             self.DoCheckDelivery(*args)
+        except TaskInterrupted:
+            self.Logout2("# 任务已手动中断")
         except Exception:
             traceback.print_exc()
             err = traceback.format_exc().strip().splitlines()[-1]
             self.Logout2("# 任务中断：" + err + "，可重新启动")
         finally:
-            self._is_running = False
+            self._set_stopped()
+
+    def _set_started(self):
+        self._cancel_requested = False
+        self._is_running = True
+        self._logEmitter.runningChanged.emit(True)
+
+    def _set_stopped(self):
+        self._is_running = False
+        self._logEmitter.runningChanged.emit(False)
+
+    def _set_running_ui(self, running):
+        self.ui.commit.setEnabled(not running)
+        self.ui.checkDelivery.setEnabled(not running)
+        self.ui.AliAccessorCommit.setEnabled(not running)
+        self.ui.AliAccessorCheckDelivery.setEnabled(not running)
+        self.ui.interrupt.setEnabled(running)
+        self.ui.AliAccessorInterrupt.setEnabled(running)
+
+    def _interrupt_task(self):
+        if self._is_running:
+            self._cancel_requested = True
+            self.Logout2("# 已请求中断，等待当前操作完成...")
+
+    def _check_cancel(self):
+        if self._cancel_requested:
+            raise TaskInterrupted()
 
     def OrderList(
         self,
@@ -1149,6 +1192,7 @@ class Window:
 
                 # 规格化数据
                 for pageId in range(pageNum):
+                    self._check_cancel()
                     data = {
                         "page": str(pageId + 1),
                         "createStartTime": createStartTime,
@@ -1277,6 +1321,7 @@ class Window:
 
                 # 规格化数据
                 for pageId in range(pageNum):
+                    self._check_cancel()
                     print(orderstatus, pageNum, pageId)
                     data = {
                         "page": str(pageId + 1),
@@ -1384,6 +1429,7 @@ class Window:
 
             # 规格化数据
             for pageId in range(pageNum):
+                self._check_cancel()
                 data = {
                     "page": str(pageId + 1),
                     "createStartTime": createStartTime,
@@ -1573,6 +1619,7 @@ class Window:
         piecesCount = 0  # 统计总价格
         sumReporter = GetFactoryGrid()
         for _list in BeihuoTable:
+            self._check_cancel()
             if (not isPrintOwn) and (_list[1] == "朝新" or _list[2] == "朝新"):
                 continue
             BH_sheet.write(BH_x, BH_y, _list[0])  # 货号
@@ -1861,6 +1908,7 @@ class Window:
         self.Logout("start RequestPic " + url, "debug")
         flag = True
         while flag:
+            self._check_cancel()
             # 图片下载尝试 2
             time.sleep(0.3)
             print("# 图片下载方法1")
@@ -2108,7 +2156,7 @@ class Window:
         if self._is_running:
             self.Logout2("已有任务在运行，请稍候再试")
             return
-        self._is_running = True
+        self._set_started()
         try:
             _thread.start_new_thread(
                 self._run_order_list,
@@ -2207,6 +2255,7 @@ class Window:
         amount = 0
 
         for cargoNumber in BeihuoJson:
+            self._check_cancel()
             BH_sheet.write(BH_x, BH_y, cargoNumber)  # 货号
             BH_y += 1
             BH_sheet.write(BH_x, BH_y, BeihuoJson[cargoNumber]["color"])  # 品名

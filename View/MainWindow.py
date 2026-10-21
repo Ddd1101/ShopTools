@@ -158,6 +158,10 @@ class ChildClothTab(QWidget, _NamedMixin):
         self.checkDelivery.setText("异常物流检测")
         btn_layout.addWidget(self.checkDelivery)
 
+        self.interrupt = self._make("interrupt", QPushButton)
+        self.interrupt.setText("中断任务")
+        btn_layout.addWidget(self.interrupt)
+
         root.addWidget(btn_box)
         root.addStretch(1)
 
@@ -278,6 +282,10 @@ class AccessorTab(QWidget, _NamedMixin):
         )
         self.AliAccessorCheckDelivery.setText("异常物流检测")
         btn_layout.addWidget(self.AliAccessorCheckDelivery)
+
+        self.AliAccessorInterrupt = self._make("AliAccessorInterrupt", QPushButton)
+        self.AliAccessorInterrupt.setText("中断任务")
+        btn_layout.addWidget(self.AliAccessorInterrupt)
 
         root.addWidget(btn_box)
         root.addStretch(1)
