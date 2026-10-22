@@ -1729,10 +1729,10 @@ class Window:
                 imageData = ImageHandler.ReadImageFromDir(imageName)
                 self.Logout("after ReadImageFromDir" + imageName, "debug")
 
-                self.Logout("读取本地图片")
+                self.Logout("货号：" + str(_list[0]) + " | sku：" + str(_list[4]) + " 读取本地图片")
 
             else:
-                self.Logout("下载图片")
+                self.Logout("货号：" + str(_list[0]) + " | sku：" + str(_list[4]) + " 下载图片")
                 # time.sleep(0.5)
                 rt = self.RequestPic(_list[5])
 
@@ -2344,10 +2344,10 @@ class Window:
                 imageData = ImageHandler.ReadImageFromDir(imageName)
                 self.Logout("after read img " + imageName, "debug")
 
-                self.Logout("读取本地图片")
+                self.Logout("货号：" + str(cargoNumber) + " | sku：" + str(BeihuoJson[cargoNumber]["color"]) + " 读取本地图片")
 
             else:
-                self.Logout("下载图片")
+                self.Logout("货号：" + str(cargoNumber) + " | sku：" + str(BeihuoJson[cargoNumber]["color"]) + " 下载图片")
                 # time.sleep(0.5)
                 rt = self.RequestPic(imgUrl)
 
