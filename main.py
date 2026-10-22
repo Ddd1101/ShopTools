@@ -1649,7 +1649,7 @@ class Window:
         savePath = self._savePath
 
         # 保存备货单
-        bei_huo_file_name = datetime.now().strftime("%m_%d_%H_%M_%S") + ".xlsx"
+        bei_huo_file_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".xlsx"
         bei_huo_file_path = os.path.abspath(os.path.join(savePath, bei_huo_file_name))
         BH_wb = xlsxwriter.Workbook(bei_huo_file_path)
         BH_sheet = BH_wb.add_worksheet("BH")
@@ -2291,7 +2291,7 @@ class Window:
         savePath = self._aliAccessorSavePath
 
         # 保存备货单
-        bei_huo_file_name = self.calStartTime.strftime("%m_%d_%H_%M_%S") + "_饰品.xlsx"
+        bei_huo_file_name = self.calStartTime.strftime("%Y-%m-%d_%H-%M-%S") + "_饰品.xlsx"
         bei_huo_file_path = os.path.abspath(os.path.join(savePath, bei_huo_file_name))
         BH_wb = xlsxwriter.Workbook(bei_huo_file_path)
         BH_sheet = BH_wb.add_worksheet("BH")
