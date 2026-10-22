@@ -246,6 +246,12 @@ def CalPriceColByName(_size):
     return -1
 
 
+def _pad_shop_name(name, width):
+    """按显示宽度补齐空格：中文/全角按 2 列、英文数字按 1 列，便于多行对齐。"""
+    visual = sum(2 if ord(c) > 127 else 1 for c in name)
+    return name + " " * max(0, width - visual)
+
+
 def CalCargoNum4ERP(cargoNumber):
     import re
 
@@ -1781,8 +1787,7 @@ class Window:
                         shopNameTmp
                         + " 总件数："
                         + str(productsCountByShopName[shopNameTmp][0])
-                        + " | 货款："
-                        + str(round(productsCountByShopName[shopNameTmp][1], 3))
+                        + "  收集完成"
                     )
                     # 输出字体
                     priceStyle = BH_wb.add_format(
@@ -1830,8 +1835,7 @@ class Window:
                         shopNameTmp
                         + " 总件数："
                         + str(productsCountByShopName[shopNameTmp][0])
-                        + " | 货款："
-                        + str(round(productsCountByShopName[shopNameTmp][1], 3))
+                        + "  收集完成"
                     )
                     # 输出字体
                     priceStyle = BH_wb.add_format(
@@ -1892,6 +1896,17 @@ class Window:
 
         # 回填最新备货单文件到界面
         self._logEmitter.latestFileChanged.emit(bei_huo_file_path)
+
+        # 店铺拿货汇总（任务结束时输出到日志）
+        self.Logout2("# 店铺拿货汇总：")
+        for _shop, _info in productsCountByShopName.items():
+            self.Logout2(
+                _pad_shop_name(_shop, 12)
+                + " 总件数："
+                + str(_info[0]).ljust(2)
+                + " | 货款："
+                + str(round(_info[1], 3))
+            )
 
         self.Logout("end GetTable", "debug")
 
