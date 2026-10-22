@@ -532,6 +532,7 @@ class LogEmitter(QtCore.QObject):
     message = QtCore.Signal(str)
     openUrlRequested = QtCore.Signal(str)
     runningChanged = QtCore.Signal(bool)
+    latestFileChanged = QtCore.Signal(str)
 
 
 class _TeeStream:
@@ -570,6 +571,9 @@ class Window:
         # 打开浏览器只在主线程执行，避免工作线程直接操作 Qt 导致闪退
         self._logEmitter.openUrlRequested.connect(self._open_url)
         self._logEmitter.runningChanged.connect(self._set_running_ui)
+        # 最新的备货单文件路径，由工作线程保存后通过信号回填到界面
+        self._logEmitter.latestFileChanged.connect(self._on_latest_file_changed)
+        self._latest_bei_huo_path = ""
 
         # 是否把 debug 日志输出到界面日志框（默认关闭）
         self.isPrintDebug = False
@@ -597,6 +601,12 @@ class Window:
         self.ui.interrupt.clicked.connect(self._interrupt_task)
         self.ui.AliAccessorInterrupt.clicked.connect(self._interrupt_task)
         self._set_running_ui(False)
+
+        # 打开备货单文件夹 / 打开最新备货单文件
+        self.ui.openBeiHuoDir.clicked.connect(self._open_bei_huo_dir)
+        self.ui.openLatestBeiHuo.clicked.connect(self._open_latest_bei_huo)
+        # 启动时先加载「备货单」文件夹中已有的文件到下拉框
+        self._refresh_bei_huo_files()
 
     def AliChildClothInit(self):
         # 订单时间
@@ -846,6 +856,52 @@ class Window:
 
     def _open_url(self, url):
         QDesktopServices.openUrl(QUrl(url))
+
+    def _on_latest_file_changed(self, path):
+        # 工作线程保存备货单后，通过信号刷新下拉列表并选中最新文件
+        self._latest_bei_huo_path = path
+        self._refresh_bei_huo_files(select_path=path)
+
+    def _get_bei_huo_dir(self):
+        # 优先用最新产出文件所在目录；否则回退到默认「备货单」目录
+        if self._latest_bei_huo_path:
+            d = os.path.dirname(self._latest_bei_huo_path)
+            if os.path.isdir(d):
+                return d
+        return os.path.abspath(getattr(self, "_savePath", None) or "备货单")
+
+    def _refresh_bei_huo_files(self, select_path=None):
+        # 把「备货单」文件夹里所有 xlsx 文件按修改时间倒序填入下拉框
+        d = self._get_bei_huo_dir()
+        combo = self.ui.latestBeiHuoFile
+        combo.clear()
+        if not os.path.isdir(d):
+            return
+        try:
+            files = [
+                f
+                for f in os.listdir(d)
+                if f.lower().endswith(".xlsx") and not f.startswith("~$")
+            ]
+        except OSError:
+            files = []
+        files.sort(key=lambda f: os.path.getmtime(os.path.join(d, f)), reverse=True)
+        for f in files:
+            combo.addItem(f, os.path.join(d, f))
+        if select_path:
+            idx = combo.findText(os.path.basename(select_path))
+            if idx >= 0:
+                combo.setCurrentIndex(idx)
+
+    def _open_bei_huo_dir(self):
+        QDesktopServices.openUrl(QUrl.fromLocalFile(self._get_bei_huo_dir()))
+
+    def _open_latest_bei_huo(self):
+        path = self.ui.latestBeiHuoFile.currentData()
+        if not path or not os.path.exists(path):
+            self.Logout2("# 暂无备货单文件可打开")
+            return
+        QDesktopServices.openUrl(QUrl.fromLocalFile(path))
 
     def _choose_file(self, widget):
         filePath = QFileDialog.getOpenFileName(
@@ -1595,9 +1651,9 @@ class Window:
         savePath = self._savePath
 
         # 保存备货单
-        BH_wb = xlsxwriter.Workbook(
-            savePath + "/" + datetime.now().strftime("%m_%d_%H_%M_%S") + ".xlsx"
-        )
+        bei_huo_file_name = datetime.now().strftime("%m_%d_%H_%M_%S") + ".xlsx"
+        bei_huo_file_path = os.path.abspath(os.path.join(savePath, bei_huo_file_name))
+        BH_wb = xlsxwriter.Workbook(bei_huo_file_path)
         BH_sheet = BH_wb.add_worksheet("BH")
         BH_pay_sheet = BH_wb.add_worksheet("pay")
         BH_x = 0
@@ -1835,6 +1891,9 @@ class Window:
             BH_wb.close()
         except Exception as e:
             print("程序出现异常:", e)
+
+        # 回填最新备货单文件到界面
+        self._logEmitter.latestFileChanged.emit(bei_huo_file_path)
 
         self.Logout("end GetTable", "debug")
 
@@ -2234,9 +2293,9 @@ class Window:
         savePath = self._aliAccessorSavePath
 
         # 保存备货单
-        BH_wb = xlsxwriter.Workbook(
-            savePath + "/" + self.calStartTime.strftime("%m_%d_%H_%M_%S") + "_饰品.xlsx"
-        )
+        bei_huo_file_name = self.calStartTime.strftime("%m_%d_%H_%M_%S") + "_饰品.xlsx"
+        bei_huo_file_path = os.path.abspath(os.path.join(savePath, bei_huo_file_name))
+        BH_wb = xlsxwriter.Workbook(bei_huo_file_path)
         BH_sheet = BH_wb.add_worksheet("BH")
         BH_x = 0
         BH_y = 0
@@ -2354,6 +2413,9 @@ class Window:
         )
 
         BH_wb.close()
+
+        # 回填最新备货单文件到界面
+        self._logEmitter.latestFileChanged.emit(bei_huo_file_path)
 
 
 if __name__ == "__main__":

@@ -304,12 +304,16 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         splitter = QSplitter(Qt.Horizontal)
-        layout = QHBoxLayout(central)
+        layout = QVBoxLayout(central)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(splitter)
         central.setLayout(layout)
 
-        # 左侧 Tab
+        # 左半边：三个 Tab + 底部工具条（整体置于左侧，不侵入右侧日志框）
+        left = QWidget()
+        left_layout = QVBoxLayout(left)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+
         self.tabWidget = QTabWidget()
         self.tabWidget.setObjectName("tabWidget")
         self._cloth_tab = ChildClothTab()
@@ -319,7 +323,29 @@ class MainWindow(QMainWindow):
         self.tabWidget.addTab(self._cloth_tab, "1688童装")
         self.tabWidget.addTab(self._accessor_tab, "1688饰品")
         self.tabWidget.addTab(pdd_tab, "PDD童装")
-        splitter.addWidget(self.tabWidget)
+        left_layout.addWidget(self.tabWidget, 1)
+
+        # 底部工具条：打开备货单文件夹 + 备货单文件下拉选择 + 打开文件
+        bottom = QWidget()
+        bottom_layout = QHBoxLayout(bottom)
+        bottom_layout.setContentsMargins(8, 4, 8, 4)
+
+        self.openBeiHuoDir = QPushButton("打开备货单文件夹")
+        self.openBeiHuoDir.setObjectName("openBeiHuoDir")
+
+        self.latestBeiHuoFile = QComboBox()
+        self.latestBeiHuoFile.setObjectName("latestBeiHuoFile")
+        self.latestBeiHuoFile.setEditable(False)
+
+        self.openLatestBeiHuo = QPushButton("打开文件")
+        self.openLatestBeiHuo.setObjectName("openLatestBeiHuo")
+
+        bottom_layout.addWidget(self.openBeiHuoDir)
+        bottom_layout.addWidget(self.latestBeiHuoFile, 1)
+        bottom_layout.addWidget(self.openLatestBeiHuo)
+
+        left_layout.addWidget(bottom)
+        splitter.addWidget(left)
 
         # 右侧日志框
         self.costomLogging = QTextBrowser()
