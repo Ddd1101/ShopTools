@@ -1974,31 +1974,28 @@ class Window:
             self._check_cancel()
             # 图片下载尝试 2
             time.sleep(0.3)
-            print("# 图片下载方法1")
-            self.Logout2("# 图片下载方法1")
             try:
                 response = requests.get(url)
                 if response.status_code == 200:
                     imageName = url.split(".jpg")[0].split("/")[-1]
                     with open("images/" + imageName + ".jpg", "wb") as f:
                         f.write(response.content)
-                    self.Logout2("# 图片下载方法1 成功")
-
                     return 400
                 else:
-                    print("无法下载图片1:", response.status_code)
+                    self.Logout(
+                        "图片下载失败(status " + str(response.status_code) + ")", "debug"
+                    )
             except:
-                print("无法下载图片1 - 1")
+                self.Logout("图片下载异常，重试", "debug")
 
             # 图片下载尝试 1
             try:
-                self.Logout2("# 图片下载方法2")
                 if self.errorUrl != url:
                     self.Logout("<a href='" + url + "'>" + url + "</a>")
                 picData = urllib.request.urlopen(url)
                 return picData
             except:
-                self.Logout2("# 获取图片异常2 重试")
+                self.Logout("图片获取异常，重试", "debug")
                 time.sleep(0.1)
 
                 imageName = url.split(".jpg")[0].split("/")[-1]
