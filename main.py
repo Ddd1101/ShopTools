@@ -605,8 +605,6 @@ class Window:
         # 打开备货单文件夹 / 打开最新备货单文件
         self.ui.openBeiHuoDir.clicked.connect(self._open_bei_huo_dir)
         self.ui.openLatestBeiHuo.clicked.connect(self._open_latest_bei_huo)
-        # 启动时先加载「备货单」文件夹中已有的文件到下拉框
-        self._refresh_bei_huo_files()
 
     def AliChildClothInit(self):
         # 订单时间
