@@ -59,6 +59,14 @@ CHANGELOG.md           # 变更历史（每次改动后追加）
 - 界面优化方案若不符合用户「专业高级」预期会被取消，界面改动需谨慎。
 - 任务异常中断时若未正确复位 `_is_running` 锁，会导致无法再次启动，须在 `finally` 中统一释放。
 
+## 提交约定（Commit Conventions）
+
+- 每次提交，commit message 必须写详细：说明本次**改了什么、为什么改、影响范围、涉及的文件/模块**，不能只写一句笼统标题。
+- 采用 Conventional Commits 前缀（`feat` / `fix` / `build` / `docs` / `style` / `refactor` 等）+ 详细描述，例如：
+  - `fix: 重写 cloth 货号归类规则 —— 改为剥离末尾 -数字(1~4位) 变体后缀，将 TZ-240312-17 / 230573-75 统一到基础货号`
+  - `build: 更新打包 spec 并新增运行时钩子 —— 修正路径/数据文件、console=False 外发版，并在 exe 目录自动创建 备货单/Log/images`
+- 涉及多个独立改动时，拆分为多个聚焦单一主题的提交，便于回溯。
+
 ## 变更记录约定
 
 - 每次重要改动完成后，在 [CHANGELOG.md](CHANGELOG.md) 顶部追加一条记录（日期 + 摘要）。
