@@ -355,6 +355,10 @@ class MainWindow(QMainWindow):
 
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 1)
+        # 左右视图可通过分隔条拖拽调整大小比例
+        splitter.setHandleWidth(6)
+        splitter.setChildrenCollapsible(False)
+        splitter.setSizes([450, 476])
 
         # 把两个 Tab 内已命名的控件提升到 MainWindow 属性，
         # 使 self.ui.XXX 的访问语义与旧 QUiLoader 结果一致。
