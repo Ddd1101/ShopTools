@@ -86,6 +86,9 @@ request_type = {
 
 sumReporter = {}
 
+# 收集「未找到对应价格」的货号/规格，任务结束时统一输出
+missing_price_records = []
+
 worksheet = None
 
 ## shop type
@@ -285,12 +288,8 @@ def GetCost(cargoNumber, skuInfosValue, colNum=0):
         else:
             _price = ""
         if _price == "":
-            print(
-                "货号："
-                + cargoNumber
-                + " 规格： "
-                + skuInfosValue
-                + " ： 未找到对应价格"
+            missing_price_records.append(
+                "货号：" + str(cargoNumber) + " 规格：" + str(skuInfosValue)
             )
             _price = 0
         return float(_price)
@@ -1107,6 +1106,7 @@ class Window:
         global global_SHOPTYPE
         global_SHOPTYPE = shopType
         worksheet = GetPriceGrid()
+        missing_price_records.clear()
         if mode == 5:
             orderId = 0
             if shopType == SHOPTYPE_ALI_CHILD_CLOTH:
@@ -1193,6 +1193,13 @@ class Window:
         #                          '未枚举', shopName,
         #                          isPrintOwn, mode,
         #                          limitDeliveredTime, isPrintUnitPrice, shopType)
+
+        # 汇总输出：未找到对应价格的货号/规格
+        if missing_price_records:
+            self.Logout2("# ============ 未找到价格 ============")
+            for _rec in missing_price_records:
+                self.Logout2("# " + _rec)
+            self.Logout2("# ====================================")
 
         # self.ui.output.append("# 统计完成 \n")
         self.Logout2("# 统计完成 \n")
