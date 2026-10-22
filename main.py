@@ -249,19 +249,10 @@ def CalPriceColByName(_size):
 def CalCargoNum4ERP(cargoNumber):
     import re
 
-    # 使用正则表达式分割货号（按非字母数字字符分割，但保留字母数字组合）
-    pattern = r"[^\w]|_|-"  # 匹配任何非单词字符或下划线（用于分割）
-    all_segments = []
-    # 分割并过滤空字符串
-    segments = [seg for seg in re.split(pattern, cargoNumber) if seg]
-
-    # 找到长度最长的段（如果有多个相同长度，取第一个出现的）
-    longest_segment = max(segments, key=len, default="")
-
-    if len(cargoNumber) > 0 and cargoNumber[0] == "T":
-        longest_segment = "TZ-" + longest_segment
-
-    return longest_segment
+    # 货号四种类型：TZ-240312 / TZ-240312-17 / 230573 / 230573-75
+    # 末尾「-数字」是变体后缀（数字 1~4 位），归拢时统一到基础货号
+    # 例：TZ-240312-17、TZ-240312-21 -> TZ-240312；230573-75、230573-113 -> 230573
+    return re.sub(r"-\d{1,4}$", "", cargoNumber)
 
 
 def GetCost(cargoNumber, skuInfosValue, colNum=0):
