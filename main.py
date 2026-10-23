@@ -14,9 +14,7 @@ import io
 import urllib
 import time
 import requests
-import hmac
 import math
-import xlrd
 import PySide2
 import _thread
 
@@ -31,6 +29,28 @@ from View.MenuSettingView import *
 from View.MainWindow import MainWindow
 
 from PIL import Image
+
+# ShopBackData SDK：多平台 API 汇总库接口
+from ShopBackData.Common import (
+    EnglishCode as en_code,
+    AlbbBaseUrl as base_url,
+    request_type,
+    SHOPTYPE_ALI_CHILD_CLOTH,
+    SHOPTYPE_ALI_ACCESSOR,
+)
+from ShopBackData.Common.Utils.PriceUtil import (
+    CalSize,
+    CalPriceLocation,
+    CalPriceLocationENCode,
+    CalENCode,
+    CalCargoNum4ERP,
+    NumFormate4Print,
+    pad_shop_name as _pad_shop_name,
+)
+from ShopBackData.Common.Utils.ExcelUtil import load_price_grid, load_factory_grid
+from ShopBackData.Common.Model import CATEGORY_CLOTH, CATEGORY_ACCESSORY
+from ShopBackData.Ali import Alibaba1688Client, CredentialStore
+from ShopBackData.Ali.Category import get_category_adapter
 
 os.environ["QT_MAC_WANTS_LAYER"] = "1"
 
@@ -65,10 +85,16 @@ access_token = {
     "义乌茜阳": "a8de29c8-ff57-4336-b4e7-e1c3d1c72f34",
 }
 
-# /ShopBackData/Common/GlobleDate - EnglishCode
-en_code = ["s", "S", "m", "M", "l", "L", "x", "X"]
-# /ShopBackData/Common/GlobleDate - AlbbBaseUrl
-base_url = "https://gw.open.1688.com/openapi/"
+# 构建 ShopBackData 客户端（凭据委托 SDK CredentialStore 管理）
+_sdk_credentials = CredentialStore.from_mapping({
+    shopName: {
+        "app_key": AppKey[shopName],
+        "app_secret": AppSecret[shopName],
+        "access_token": access_token[shopName],
+    }
+    for shopName in AppKey
+})
+_sdk_client = Alibaba1688Client(credentials=_sdk_credentials)
 
 path = os.path.realpath(os.curdir)
 
@@ -79,11 +105,6 @@ factory_path = path + "/factory.xlsx"
 
 logging_path = path + "\\Log\\"
 
-request_type = {
-    "trade": "param2/1/com.alibaba.trade/",
-    "delivery": "param2/1/com.alibaba.logistics/",
-}
-
 sumReporter = {}
 
 # 收集「未找到对应价格」的货号/规格，任务结束时统一输出
@@ -91,37 +112,19 @@ missing_price_records = []
 
 worksheet = None
 
-## shop type
-SHOPTYPE_ALI_CHILD_CLOTH = 1
-SHOPTYPE_ALI_ACCESSOR = 2
-
 global_SHOPTYPE = SHOPTYPE_ALI_CHILD_CLOTH
 global_OrderNum = 0
 
 
-# /Common/Utils/ExcelUtil - getSheet()
+# /Common/Utils/ExcelUtil - getSheet()（委托 SDK）
 def GetPriceGrid():
     if global_SHOPTYPE == SHOPTYPE_ALI_CHILD_CLOTH:
-        workbook = xlrd.open_workbook(price_path)  # 打开工作簿
-    else:
-        workbook = xlrd.open_workbook(price_accessor_path)
-    sheets = workbook.sheet_names()  # 获取工作簿中的所有表格
-    worksheet = workbook.sheet_by_name(
-        sheets[0]
-    )  # 获取工作簿中所有表格中的的第一个表格
-    return worksheet
+        return load_price_grid(price_path)
+    return load_price_grid(price_accessor_path)
 
 
 def GetFactoryGrid():
-    workbook = xlrd.open_workbook(factory_path)  # 打开工作簿
-    sheets = workbook.sheet_names()  # 获取工作簿中的所有表格
-    worksheet = workbook.sheet_by_name(
-        sheets[0]
-    )  # 获取工作簿中所有表格中的的第一个表格
-
-    for t in range(1, worksheet.nrows):
-        factoryName = worksheet.cell(t, 0).value
-        sumReporter[factoryName] = {}
+    sumReporter.update(load_factory_grid(factory_path))
     return sumReporter
 
 
@@ -137,181 +140,35 @@ def SplitChineseAndPinyin(shopNameRaw):
     return ret
 
 
-# /ShopBackData/Common/Utils/Utils - NumFormate4Print
-def NumFormate4Print(numStr):
-    res = ""
-    if numStr[0] in en_code:
-        for item in numStr:
-            if item in en_code:
-                res += item
-            else:
-                break
-        fomateSpaceNum = 5 - len(res)
-        for k in range(fomateSpaceNum):
-            res = " " + res
-    else:
-        for item in numStr:
-            if item >= "0" and item <= "9":
-                res += item
-            else:
-                if len(res) and res[0] == "9":
-                    res += " "
-                break
-        res += "cm"
-    return res
+_cloth_category_adapter = None
+_accessory_category_adapter = None
 
 
-# ShopBackData/Common/Utils/PriceUtils - CalSize
-def CalSize(sizeDescription):
-    _size = 0
-    for i in range(len(sizeDescription)):
-        if sizeDescription[i] >= "0" and sizeDescription[i] <= "9":
-            _size = _size * 10 + int(sizeDescription[i])
-        else:
-            break
-    return _size
-
-
-# ShopBackData/Common/Utils/PriceUtils
-def CalPriceLocationENCode(_size):
-    if _size == "":
-        return -1
-
-    if _size[0] == "S" or _size[0] == "s":
-        return 24
-
-    if _size[0] == "M" or _size[0] == "m":
-        return 25
-
-    if _size[0] == "L" or _size[0] == "l":
-        return 26
-
-    if _size[0] == "x" or _size[0] == "X":
-        if _size[1] == "L" or _size[1] == "l":
-            return 27
-        elif _size[1] == "x" or _size[1] == "X":
-            if _size[2] == "L" or _size[2] == "l":
-                return 28
-            elif _size[2] == "x" or _size[2] == "X":
-                return 29
-
-    return -1
-
-
-# ShopBackData/Common/Utils/PriceUtil/CalPriceLocation
-def CalPriceLocation(_size):
-    if _size[0] in en_code:
-        return CalPriceLocationENCode(_size)
-    # print(CalSize(_size))
-    theta = (CalSize(_size) - 90) / 5
-    _col = 5 + theta
-    # print(_col)
-    return _col
-
-
-def CalENCode(_size):
-    if _size[0] == "S" or _size[0] == "s":
-        return "S"
-
-    if _size[0] == "M" or _size[0] == "m":
-        return "M"
-
-    if _size[0] == "L" or _size[0] == "l":
-        return "L"
-
-    if _size[0] == "x" or _size[0] == "X":
-        if _size[1] == "L" or _size[1] == "l":
-            return "XL"
-        elif _size[1] == "x" or _size[1] == "X":
-            if _size[2] == "L" or _size[2] == "l":
-                return "XXL"
-            elif _size[2] == "x" or _size[2] == "X":
-                return "XXL"
-
-    return -1
-
-
-def CalPriceColByName(_size):
-    _size = _size.upper()
-    if _size == "2XL":
-        _size = "XXL"
-    elif _size == "3XL":
-        _size = "XXXL"
-    if _size[0] in en_code:
-        _size = CalENCode(_size)
-        for col in range(worksheet.ncols):
-            if worksheet.cell_value(0, col) == _size:
-                return col
-
-    for col in range(worksheet.ncols):
-        if worksheet.cell_value(0, col) == CalSize(_size):
-            return col
-    return -1
-
-
-def _pad_shop_name(name, width):
-    """按显示宽度补齐空格：中文/全角按 2 列、英文数字按 1 列，便于多行对齐。"""
-    visual = sum(2 if ord(c) > 127 else 1 for c in name)
-    return name + " " * max(0, width - visual)
-
-
-def CalCargoNum4ERP(cargoNumber):
-    import re
-
-    # 货号四种类型：TZ-240312 / TZ-240312-17 / 230573 / 230573-75
-    # 末尾「-数字」是变体后缀（数字 1~4 位），归拢时统一到基础货号
-    # 例：TZ-240312-17、TZ-240312-21 -> TZ-240312；230573-75、230573-113 -> 230573
-    return re.sub(r"-\d{1,4}$", "", cargoNumber)
+def _get_category_adapter():
+    global _cloth_category_adapter, _accessory_category_adapter
+    if global_SHOPTYPE == SHOPTYPE_ALI_CHILD_CLOTH:
+        if _cloth_category_adapter is None:
+            _cloth_category_adapter = get_category_adapter(CATEGORY_CLOTH, price_path)
+        return _cloth_category_adapter
+    if _accessory_category_adapter is None:
+        _accessory_category_adapter = get_category_adapter(CATEGORY_ACCESSORY, price_accessor_path)
+    return _accessory_category_adapter
 
 
 def GetCost(cargoNumber, skuInfosValue, colNum=0):
-    global worksheet
-    # 货号适配ERP
-    if worksheet == None:
-        worksheet = GetPriceGrid()
-    if global_SHOPTYPE == SHOPTYPE_ALI_CHILD_CLOTH:
-        rowIndex = -1
-        for t in range(1, worksheet.nrows):
-            value = worksheet.cell(t, colNum).value
-            if isinstance(value, int) or isinstance(value, float):
-                value = int(value)
-            # print(str(cargoNumber), str(value))
-            if str(cargoNumber) == str(value):
-                rowIndex = t
-                break
-        if rowIndex == -1:
-            print(cargoNumber + " ： 未找到对应货号1")
-            return 0
-        colIndex = CalPriceColByName(skuInfosValue)
-        if colIndex != -1:
-            _price = worksheet.cell(rowIndex, int(colIndex)).value
-        else:
-            _price = ""
-        if _price == "":
-            missing_price_records.append(
-                "货号：" + str(cargoNumber) + " 规格：" + str(skuInfosValue)
-            )
-            _price = 0
-        return float(_price)
-    elif global_SHOPTYPE == SHOPTYPE_ALI_ACCESSOR:
-        rowIndex = -1
-        for t in range(1, worksheet.nrows):
-            if str(cargoNumber) == str(worksheet.cell(t, colNum).value):
-                rowIndex = t
-                break
-        if rowIndex == -1:
-            print(str(cargoNumber) + " ： 未找到对应货号2")
-            return 0
-        colIndex = 2
-        if colIndex != None:
-            _price = worksheet.cell(rowIndex, int(colIndex)).value
-        else:
-            _price = ""
-        return float(_price)
+    adapter = _get_category_adapter()
+    price = adapter.get_price(str(cargoNumber), str(skuInfosValue), colNum)
+    if adapter.missing_price_records:
+        missing_price_records.extend(adapter.missing_price_records)
+        adapter.missing_price_records.clear()
+    return price
 
 
 # 由货号得到产品名 - 厂家地址 - 厂家名
 def GetAdressAndShopName(cargoNumber):
+    global worksheet
+    if worksheet is None:
+        worksheet = GetPriceGrid()
     rowIndex = -1
     for t in range(1, worksheet.nrows):
         value = worksheet.cell(t, 0).value
@@ -334,127 +191,27 @@ def CalPageNum(totalRecord):
 
 
 def CalculateSignature(urlPath, data, shopName):
-    # 构造签名因子：urlPath
-
-    # 构造签名因子：拼装参数
-    params = list()
-    for key in data.keys():
-        params.append(key + str(data[key]))
-    params.sort()
-    sortedParams = params
-    assembedParams = str()
-    for param in sortedParams:
-        assembedParams = assembedParams + param
-
-    # 合并签名因子
-    mergedParams = urlPath + assembedParams
-    mergedParams = bytes(mergedParams, "utf8")
-
-    # 执行hmac_sha1算法 && 转为16进制
-    hex_res1 = hmac.new(AppSecret[shopName], mergedParams, digestmod="sha1").hexdigest()
-
-    # 转为全大写字符
-    hex_res1 = hex_res1.upper()
-
-    return hex_res1
+    # 委托 SDK 客户端签名
+    return _sdk_client._sign(urlPath, data, AppSecret[shopName])
 
 
-# 交易数据获取  默认1页
+# 交易数据获取（委托 SDK）
 def GetTradeData(data, shopName):
-    data["access_token"] = access_token[shopName]
-    _aop_signature = CalculateSignature(
-        request_type["trade"] + "alibaba.trade.getSellerOrderList/" + AppKey[shopName],
-        data,
-        shopName,
-    )
-    data["_aop_signature"] = _aop_signature
-    url = (
-        base_url
-        + request_type["trade"]
-        + "alibaba.trade.getSellerOrderList/"
-        + AppKey[shopName]
-    )
-    try:
-        time.sleep(0.2)
-        response = requests.post(url, data=data)
-    except Exception as e:
-        print("post error ", e)
-
-    return response.json()
+    return _sdk_client.get_order_list(shopName, **data)
 
 
-# 已发货物流信息
+# 已发货物流信息（委托 SDK）
 def GetDeliveryData(data, shopName):
-    data["access_token"] = access_token[shopName]
-    _aop_signature = CalculateSignature(
-        request_type["delivery"]
-        + "alibaba.trade.getLogisticsInfos.sellerView/"
-        + AppKey[shopName],
-        data,
-        shopName,
-    )
-    data["_aop_signature"] = _aop_signature
-
-    url = (
-        base_url
-        + request_type["delivery"]
-        + "alibaba.trade.getLogisticsInfos.sellerView/"
-        + AppKey[shopName]
-    )
-
-    response = requests.post(url, data=data)
-
-    return response.json()
+    return _sdk_client.get_logistics(shopName, **data)
 
 
-# 已发货物流信息+单号信息
+# 已发货物流信息+单号信息（委托 SDK）
 def GetDeliveryTraceData(data, shopName):
-    data["access_token"] = access_token[shopName]
-    tmp = CalculateSignature(
-        "param2/1/com.alibaba.logistics/alibaba.trade.getLogisticsInfos.sellerView/"
-        + AppKey[shopName],
-        data,
-        shopName,
-    )
-    _aop_signature = CalculateSignature(
-        request_type["delivery"]
-        + "alibaba.trade.getLogisticsTraceInfo.sellerView/"
-        + AppKey[shopName],
-        data,
-        shopName,
-    )
-    data["_aop_signature"] = _aop_signature
-    url = (
-        base_url
-        + request_type["delivery"]
-        + "alibaba.trade.getLogisticsTraceInfo.sellerView/"
-        + AppKey[shopName]
-    )
-
-    response = requests.post(url, data=data)
-
-    return response.json()
+    return _sdk_client.get_logistics_trace(shopName, **data)
 
 
 def GetSingleTradeData(data, shopName):
-    data["access_token"] = access_token[shopName]
-    _aop_signature = CalculateSignature(
-        request_type["trade"]
-        + "alibaba.trade.ec.getOrder.sellerView/"
-        + AppKey[shopName],
-        data,
-        shopName,
-    )
-    data["_aop_signature"] = _aop_signature
-    url = (
-        base_url
-        + request_type["trade"]
-        + "alibaba.trade.ec.getOrder.sellerView/"
-        + AppKey[shopName]
-    )
-    response = requests.post(url, data=data)
-
-    return response.json()
+    return _sdk_client.get_order_detail(shopName, **data)
 
 
 def GetRefundBill():
